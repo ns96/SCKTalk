@@ -158,13 +158,13 @@ public class SCKTalk {
     public static void main(String[] args) throws Exception {
         SCKTalk sckTalk = new SCKTalk();
 
-        sckTalk.connect("COM12");
+        sckTalk.connect("COM8");
 
         String response = sckTalk.setModePC();
 
         if(response.equals("OK")) {
             System.out.println("Connected to ST-V3\n\n");
-            sckTalk.getMotorProfile(10, "S1");
+            //sckTalk.getMotorProfile(10, "S1");
         }
 
         /*Set<String> ports = NRSerialPort.getAvailableSerialPorts();

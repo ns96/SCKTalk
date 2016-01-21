@@ -238,7 +238,7 @@ public class SCKTalkBluetooth implements DiscoveryListener{
                 System.exit(0);
             } else {
                 if(sckTalkBluetooth.connectToSCK()) {
-                    sckTalkBluetooth.getMotorProfile(10, "S1");
+                    sckTalkBluetooth.getMotorProfile(50, "S1");
                     sckTalkBluetooth.setModeNormal();
                 }
             }
