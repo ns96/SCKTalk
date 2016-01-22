@@ -16,26 +16,28 @@ import com.jgoodies.forms.layout.*;
  * @author Nathan Stevens
  */
 public class DipCoater extends JFrame {
-    // variebles for the linear stage
+    // variables for the linear stage
     double stepsPerRev = 200;
     double mmPerStep = 0.003175;
     double mmPerRev = stepsPerRev*mmPerStep;
-    int mmPerMin = 0;
+
+    int mmPerMin = 0; // used to compute the distance
 
     // used this to keep track of the time
-    private long startTime = 0;
-    private long stopTime = 0;
+    private int currentTime;  // this keeps track of how long the motor has been moving
     private int moveTime = 0;
 
     private int speed = 0; // speed in RPMs
 
-    private int travel = 0; // the distance travel
+    private int travel = 0; // the distance travel in mm
+
+    private String travelDirection = "+";  // the direction of travel + down, - for up
+
+    private String status = "MANUAL";  // Manual or Auto
 
     private int enterCount = 0; // keep track of the number of time enter was pressed
 
     private boolean stopped = false;
-
-    private String statusText = "STOPPED";
 
     private SCKTalk sckTalk = new SCKTalk();
 
@@ -45,11 +47,13 @@ public class DipCoater extends JFrame {
 
     private void speedSpinnerStateChanged() {
         mmPerMin = (Integer) speedSpinner.getValue();
-        speedLabel1.setText(mmPerMin + "MM/MIN");
 
         // calculate the speed in rpm
         speed  = (int)(mmPerMin/mmPerRev);
-        speedLabel2.setText(speed + "REV/MIN");
+        speedLabel2.setText(speed + " REV/MIN");
+
+        // update the console
+        updateConsole(0);
     }
 
     private void exitButtonActionPerformed() {
@@ -83,45 +87,74 @@ public class DipCoater extends JFrame {
     private void upButtonItemStateChanged(ItemEvent e) {
         // reset the counter for that allows for automatic up and down
         enterCount= 0;
+        travelDirection = "-";
+        status = "MANUAL";
 
         if (e.getStateChange() == ItemEvent.SELECTED) {
             sckTalk.sendCommand("SET S2 CW");
             sckTalk.sendCommand("SET S1 " + speed);
-            startTime = System.currentTimeMillis();
+            startTimerThread();
         } else {
             sckTalk.sendCommand("SET S1 0");
-            stopTime = System.currentTimeMillis();
-            calculateTime("UP");
+            stopped = true;
+            calculateMoveTime("UP");
         }
     }
 
     private void downButtonItemStateChanged(ItemEvent e) {
         // reset the counter for that allows for automatic up and down
         enterCount= 0;
+        travelDirection = "+";
+        status = "MANUAL";
 
         if (e.getStateChange() == ItemEvent.SELECTED) {
             sckTalk.sendCommand("SET S2 CCW");
             sckTalk.sendCommand("SET S1 " + speed);
-            startTime = System.currentTimeMillis();
+            startTimerThread();
         } else {
             sckTalk.sendCommand("SET S1 0");
-            stopTime = System.currentTimeMillis();
-            calculateTime("DOWN");
+            stopped = true;
+            calculateMoveTime("DOWN");
         }
     }
 
-    private void calculateTime(String direction) {
-        long elapseTime = stopTime - startTime;
-        int timeInSeconds =  (int)(elapseTime / 1000);
+    /**
+     * Method to start a counter thread which keeps track of how long
+     * the unit has been moving
+     */
+    private void startTimerThread() {
+        Thread thread = new Thread() {
+            public void run() {
+                stopped = false;
+                currentTime = 0;
 
-        System.out.println("Time in Second: " + timeInSeconds);
-        displayLocation(timeInSeconds);
+                while (!stopped) {
+                    calculateTravel(currentTime);
+                    updateConsole(currentTime);
+
+                    // pause for a second
+                    try {
+                        sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    currentTime++;
+                }
+            }
+        };
+
+        thread.start();
+    }
+
+    private void calculateMoveTime(String direction) {
+        calculateTravel(currentTime);
 
         if (direction.equals("DOWN")) {
-            moveTime += timeInSeconds;
-            System.out.println("Total Move Time/Travel " + moveTime + " / -" + travel);
+            moveTime += currentTime;
+            //System.out.println("Total Move Time/Travel " + moveTime + " / " + travelDirection + travel);
         } else {
-            System.out.println("Total Travel +" + travel);
+            //System.out.println("Total Travel " + travelDirection + travel);
             moveTime = 0; // reset the move time
         }
     }
@@ -137,7 +170,10 @@ public class DipCoater extends JFrame {
     private void enterButtonActionPerformed() {
         enterButton.setEnabled(false);
 
-        // check that we didn't just enter a move time already
+        // set the status to AUTO
+        status = "AUTO";
+
+        // check that we didn't just enter a move time already for debugging
         getMoveTime();
 
         if (enterCount == 0) {
@@ -146,14 +182,16 @@ public class DipCoater extends JFrame {
             Thread thread = new Thread() {
                 public void run() {
                     stopped = false;
+                    travelDirection = "-";
 
-                    // now move the arm back up if not stopped
+                    // now move the arm back up
                     sckTalk.sendCommand("SET S2 CW");
                     sckTalk.sendCommand("SET S1 " + speed);
 
                     int time = 0;
                     while (!stopped && time < moveTime) {
-                        displayLocation(time);
+                        calculateTravel(time);
+                        updateConsole(time);
 
                         // pause for a second
                         try {
@@ -177,14 +215,17 @@ public class DipCoater extends JFrame {
             Thread thread = new Thread() {
                 public void run() {
                     stopped = false;
+                    currentTime = 0;
 
                     // start the arm moving down
+                    travelDirection = "+";
                     sckTalk.sendCommand("SET S2 CCW");
                     sckTalk.sendCommand("SET S1 " + speed);
 
                     int time = 0;
                     while (!stopped && time < moveTime) {
-                        displayLocation(time);
+                        calculateTravel(time);
+                        updateConsole(currentTime);
 
                         // pause for a second
                         try {
@@ -194,19 +235,22 @@ public class DipCoater extends JFrame {
                         }
 
                         time++;
+                        currentTime++;
                     }
 
                     // stop arm at bottom
                     sckTalk.sendCommand("SET S1 " + 0);
 
                     if (!stopped) {
-                        // now move the arm back up if not stopped
+                        // now move the arm back up
+                        travelDirection = "-";
                         sckTalk.sendCommand("SET S2 CW");
                         sckTalk.sendCommand("SET S1 " + speed);
 
                         time = 0;
                         while (!stopped && time < moveTime) {
-                            displayLocation(time);
+                            calculateTravel(time);
+                            updateConsole(currentTime);
 
                             // pause for a second
                             try {
@@ -216,6 +260,7 @@ public class DipCoater extends JFrame {
                             }
 
                             time++;
+                            currentTime++;
                         }
 
                         // now stop the arm at top
@@ -246,6 +291,7 @@ public class DipCoater extends JFrame {
     private void getMoveTime() {
         try {
             int value = Integer.parseInt(moveTimeTextField.getText());
+
             if(value > 0) {
                 moveTime = value;
                 enterCount = 1;
@@ -257,11 +303,24 @@ public class DipCoater extends JFrame {
      * Displays the location based on the time
      * @param time
      */
-    private void displayLocation(int time) {
+    private void calculateTravel(int time) {
         double minutes = (double)time/60;
         travel = (int)(mmPerMin*minutes);
-        distanceLabel.setText(travel + " MM");
-        System.out.println("Seconds/Travel " + time + "/" + travel);
+    }
+
+    /**
+     * Update the console with needed information
+     * @param time
+     */
+    private void updateConsole(int time) {
+        String message = "DIP COATER\n" +
+                "\n" +
+                "SPEED\t" + mmPerMin + " MM/MIN\n" +
+                "TRAVEL\t"  + travelDirection + travel + " MM\n" +
+                "TIME\t" + String.format("%04d", time) + " S\n" +
+                "MODE\t" + status;
+
+        consoleTextArea.setText(message);
     }
 
     /**
@@ -270,7 +329,8 @@ public class DipCoater extends JFrame {
     private void moveTimeTextFieldActionPerformed() {
         try {
             int time = Integer.parseInt(moveTimeTextField.getText());
-            displayLocation(time);
+            calculateTravel(time);
+            travelLabel.setText("+" + travel + " MM");
         } catch(NumberFormatException nfe) {}
     }
 
@@ -284,9 +344,8 @@ public class DipCoater extends JFrame {
         panel1 = new JPanel();
         speedSpinner = new JSpinner();
         moveTimeTextField = new JTextField();
-        distanceLabel = new JLabel();
+        travelLabel = new JLabel();
         speedLabel2 = new JLabel();
-        speedLabel1 = new JLabel();
         buttonBar = new JPanel();
         enterButton = new JButton();
         upButton = new JToggleButton();
@@ -324,7 +383,7 @@ public class DipCoater extends JFrame {
                     //---- consoleTextArea ----
                     consoleTextArea.setRows(6);
                     consoleTextArea.setFont(new Font("Monospaced", Font.BOLD, 24));
-                    consoleTextArea.setText("DIP COATER\n\nTRAVEL\t0 MM\t\nSPEED\t000 MM/MIN\nSTATUS\tSTOP/AUTO/MANUAL");
+                    consoleTextArea.setText("DIP COATER\n\nSPEED\t000 MM/MIN\nTRAVEL\t0 MM\t\nTIME\t0000 S\nMODE\tMANUAL");
                     scrollPane1.setViewportView(consoleTextArea);
                 }
                 contentPanel.add(scrollPane1, cc.xy(1, 1));
@@ -357,7 +416,7 @@ public class DipCoater extends JFrame {
                     panel1.add(speedSpinner, cc.xy(1, 1));
 
                     //---- moveTimeTextField ----
-                    moveTimeTextField.setText("0");
+                    moveTimeTextField.setText("move time");
                     moveTimeTextField.setFont(new Font("Tahoma", Font.BOLD, 12));
                     moveTimeTextField.addActionListener(new ActionListener() {
                         @Override
@@ -367,21 +426,15 @@ public class DipCoater extends JFrame {
                     });
                     panel1.add(moveTimeTextField, cc.xy(1, 3));
 
-                    //---- distanceLabel ----
-                    distanceLabel.setText("0 mm");
-                    distanceLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    panel1.add(distanceLabel, cc.xy(1, 5));
+                    //---- travelLabel ----
+                    travelLabel.setText("travel");
+                    travelLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
+                    panel1.add(travelLabel, cc.xy(1, 5));
 
                     //---- speedLabel2 ----
                     speedLabel2.setText("0 rpm");
                     speedLabel2.setFont(new Font("Tahoma", Font.BOLD, 12));
                     panel1.add(speedLabel2, cc.xy(1, 7));
-
-                    //---- speedLabel1 ----
-                    speedLabel1.setText("0 mm/min");
-                    speedLabel1.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    speedLabel1.setForeground(Color.blue);
-                    panel1.add(speedLabel1, cc.xy(1, 9));
                 }
                 contentPanel.add(panel1, cc.xy(3, 1, CellConstraints.DEFAULT, CellConstraints.FILL));
             }
@@ -474,9 +527,8 @@ public class DipCoater extends JFrame {
     private JPanel panel1;
     private JSpinner speedSpinner;
     private JTextField moveTimeTextField;
-    private JLabel distanceLabel;
+    private JLabel travelLabel;
     private JLabel speedLabel2;
-    private JLabel speedLabel1;
     private JPanel buttonBar;
     private JButton enterButton;
     private JToggleButton upButton;

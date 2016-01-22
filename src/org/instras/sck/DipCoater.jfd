@@ -82,9 +82,10 @@
                <string>text</string>
                <string>DIP COATER
 
-TRAVEL	0 MM	
 SPEED	000 MM/MIN
-STATUS	STOP/AUTO/MANUAL</string>
+TRAVEL	0 MM	
+TIME	0000 S
+MODE	MANUAL</string>
               </void>
               <void property="name">
                <string>consoleTextArea</string>
@@ -162,7 +163,7 @@ STATUS	STOP/AUTO/MANUAL</string>
               <string>javax.swing.JTextField</string>
               <void method="setProperty">
                <string>text</string>
-               <string>0</string>
+               <string>move time</string>
               </void>
               <void method="setProperty">
                <string>font</string>
@@ -201,7 +202,7 @@ STATUS	STOP/AUTO/MANUAL</string>
               <string>javax.swing.JLabel</string>
               <void method="setProperty">
                <string>text</string>
-               <string>0 mm</string>
+               <string>travel</string>
               </void>
               <void method="setProperty">
                <string>font</string>
@@ -212,7 +213,7 @@ STATUS	STOP/AUTO/MANUAL</string>
                </object>
               </void>
               <void property="name">
-               <string>distanceLabel</string>
+               <string>travelLabel</string>
               </void>
              </object>
              <object class="com.jformdesigner.model.FormLayoutConstraints">
@@ -255,41 +256,6 @@ STATUS	STOP/AUTO/MANUAL</string>
               <void method="setProperty">
                <string>gridY</string>
                <int>7</int>
-              </void>
-             </object>
-            </void>
-            <void method="add">
-             <object class="com.jformdesigner.model.FormComponent">
-              <string>javax.swing.JLabel</string>
-              <void method="setProperty">
-               <string>text</string>
-               <string>0 mm/min</string>
-              </void>
-              <void method="setProperty">
-               <string>font</string>
-               <object class="java.awt.Font">
-                <string>Tahoma</string>
-                <int>1</int>
-                <int>12</int>
-               </object>
-              </void>
-              <void method="setProperty">
-               <string>foreground</string>
-               <object class="java.awt.Color" field="blue"/>
-              </void>
-              <void property="name">
-               <string>speedLabel1</string>
-              </void>
-             </object>
-             <object class="com.jformdesigner.model.FormLayoutConstraints">
-              <class>com.jgoodies.forms.layout.CellConstraints</class>
-              <void method="setProperty">
-               <string>gridX</string>
-               <int>1</int>
-              </void>
-              <void method="setProperty">
-               <string>gridY</string>
-               <int>9</int>
               </void>
              </object>
             </void>
