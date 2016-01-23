@@ -23,17 +23,16 @@ public class DipCoater extends JFrame {
 
     int mmPerMin = 0; // used to compute the distance
 
-    // used this to keep track of the time
     private int currentTime;  // this keeps track of how long the motor has been moving
-    private int moveTime = 0;
+    private int moveTime = 0; // keeps track of how long the motor should move in auto mode
 
     private int speed = 0; // speed in RPMs
 
-    private int travel = 0; // the distance travel in mm
+    private int travel = 0; // the distance traveled in mm
 
     private String travelDirection = "+";  // the direction of travel + down, - for up
 
-    private String status = "MANUAL";  // Manual or Auto
+    private String status = "MANUAL";  // Ready, Manual or Auto
 
     private int enterCount = 0; // keep track of the number of time enter was pressed
 
@@ -52,6 +51,17 @@ public class DipCoater extends JFrame {
         speed  = (int)(mmPerMin/mmPerRev);
         speedLabel2.setText(speed + " REV/MIN");
 
+        // if we were in READY mode we need to adjust the moveTime so we move the same distance
+        if(status.equals("READY")) {
+            boolean hasValue = getMoveTime();
+            double timeInMinutes = new Double(travel)/new Double(mmPerMin);
+            moveTime = (int)(timeInMinutes*60);
+
+            if(hasValue) {
+                moveTimeTextField.setText("" + moveTime);
+            }
+        }
+
         // update the console
         updateConsole(0);
     }
@@ -69,6 +79,8 @@ public class DipCoater extends JFrame {
      * Method to connect to the STV3 controller running the PDC3.2 firmware
      */
     private void connButtonActionPerformed() {
+        sckTalk.setTestMode(testModeCheckBox.isSelected());
+
         sckTalk.connect("COM8");
 
         String response = sckTalk.setModePC();
@@ -84,51 +96,53 @@ public class DipCoater extends JFrame {
         }
     }
 
-    private void upButtonItemStateChanged(ItemEvent e) {
-        // reset the counter for that allows for automatic up and down
-        enterCount= 0;
-        travelDirection = "-";
-        status = "MANUAL";
+    /**
+     * Move stage up while the up button is pressed
+     */
+    private void upButtonStateChanged() {
+        boolean pressed = upButton.getModel().isPressed();
 
-        if (e.getStateChange() == ItemEvent.SELECTED) {
-            sckTalk.sendCommand("SET S2 CW");
-            sckTalk.sendCommand("SET S1 " + speed);
-            startTimerThread();
-        } else {
-            sckTalk.sendCommand("SET S1 0");
-            stopped = true;
-            calculateMoveTime("UP");
+        if(pressed) {
+            startTimerThread(upButton);
         }
     }
 
-    private void downButtonItemStateChanged(ItemEvent e) {
-        // reset the counter for that allows for automatic up and down
-        enterCount= 0;
-        travelDirection = "+";
-        status = "MANUAL";
+    /**
+     * Move the stage down while the button is pressed
+     */
+    private void downButtonStateChanged() {
+        boolean pressed = downButton.getModel().isPressed();
 
-        if (e.getStateChange() == ItemEvent.SELECTED) {
-            sckTalk.sendCommand("SET S2 CCW");
-            sckTalk.sendCommand("SET S1 " + speed);
-            startTimerThread();
-        } else {
-            sckTalk.sendCommand("SET S1 0");
-            stopped = true;
-            calculateMoveTime("DOWN");
+        if(pressed) {
+            startTimerThread(downButton);
         }
     }
 
     /**
      * Method to start a counter thread which keeps track of how long
      * the unit has been moving
+     * @param button
      */
-    private void startTimerThread() {
+    private void startTimerThread(final JButton button) {
         Thread thread = new Thread() {
             public void run() {
-                stopped = false;
-                currentTime = 0;
+                currentTime = 0; // used for calculating distance in real time
+                enterCount= 0; // this needs to be reset otherwise the system may think it still in auto mode
+                status = "MANUAL";
 
-                while (!stopped) {
+                // start moving motor up or down depending on which one of the button were pressed
+                if(button == upButton) {
+                    travelDirection = "-";
+                    sckTalk.sendCommand("SET S2 CW");
+                } else {
+                    travelDirection = "+";
+                    sckTalk.sendCommand("SET S2 CCW");
+                }
+
+                sckTalk.sendCommand("SET S1 " + speed);
+
+                // start loop now wating for button to be released
+                while (button.getModel().isPressed()) {
                     calculateTravel(currentTime);
                     updateConsole(currentTime);
 
@@ -140,6 +154,15 @@ public class DipCoater extends JFrame {
                     }
 
                     currentTime++;
+                }
+
+                // stop the motor now
+                sckTalk.sendCommand("SET S1 0");
+
+                if(button == upButton) {
+                    calculateMoveTime("UP");
+                } else {
+                    calculateMoveTime("DOWN");
                 }
             }
         };
@@ -206,6 +229,11 @@ public class DipCoater extends JFrame {
                     // now stop the arm at top
                     sckTalk.sendCommand("SET S1 " + 0);
 
+                    // set the status to ready
+                    status = "READY";
+                    travelDirection = "+";
+                    updateConsole(0);
+
                     enterButton.setEnabled(true);
                 }
             };
@@ -267,6 +295,10 @@ public class DipCoater extends JFrame {
                         sckTalk.sendCommand("SET S1 " + 0);
                     }
 
+                    status = "READY";
+                    travelDirection = "+";
+                    updateConsole(0);
+
                     enterButton.setEnabled(true);
                 }
             };
@@ -288,15 +320,18 @@ public class DipCoater extends JFrame {
      *
      * @return
      */
-    private void getMoveTime() {
+    private boolean getMoveTime() {
         try {
             int value = Integer.parseInt(moveTimeTextField.getText());
 
             if(value > 0) {
                 moveTime = value;
                 enterCount = 1;
+                return true;
             }
         } catch (NumberFormatException nfe) {}
+
+        return false;
     }
 
     /**
@@ -330,7 +365,10 @@ public class DipCoater extends JFrame {
         try {
             int time = Integer.parseInt(moveTimeTextField.getText());
             calculateTravel(time);
-            travelLabel.setText("+" + travel + " MM");
+
+            status = "READY";
+            travelDirection = "+";
+            updateConsole(0);
         } catch(NumberFormatException nfe) {}
     }
 
@@ -344,12 +382,12 @@ public class DipCoater extends JFrame {
         panel1 = new JPanel();
         speedSpinner = new JSpinner();
         moveTimeTextField = new JTextField();
-        travelLabel = new JLabel();
         speedLabel2 = new JLabel();
+        testModeCheckBox = new JCheckBox();
         buttonBar = new JPanel();
         enterButton = new JButton();
-        upButton = new JToggleButton();
-        downButton = new JToggleButton();
+        upButton = new JButton();
+        downButton = new JButton();
         backButton = new JButton();
         connButton = new JButton();
         exitButton = new JButton();
@@ -426,15 +464,14 @@ public class DipCoater extends JFrame {
                     });
                     panel1.add(moveTimeTextField, cc.xy(1, 3));
 
-                    //---- travelLabel ----
-                    travelLabel.setText("travel");
-                    travelLabel.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    panel1.add(travelLabel, cc.xy(1, 5));
-
                     //---- speedLabel2 ----
                     speedLabel2.setText("0 rpm");
                     speedLabel2.setFont(new Font("Tahoma", Font.BOLD, 12));
                     panel1.add(speedLabel2, cc.xy(1, 7));
+
+                    //---- testModeCheckBox ----
+                    testModeCheckBox.setText("Test Mode");
+                    panel1.add(testModeCheckBox, cc.xy(1, 9));
                 }
                 contentPanel.add(panel1, cc.xy(3, 1, CellConstraints.DEFAULT, CellConstraints.FILL));
             }
@@ -461,10 +498,10 @@ public class DipCoater extends JFrame {
                 //---- upButton ----
                 upButton.setText("UP");
                 upButton.setEnabled(false);
-                upButton.addItemListener(new ItemListener() {
+                upButton.addChangeListener(new ChangeListener() {
                     @Override
-                    public void itemStateChanged(ItemEvent e) {
-                        upButtonItemStateChanged(e);
+                    public void stateChanged(ChangeEvent e) {
+                        upButtonStateChanged();
                     }
                 });
                 buttonBar.add(upButton, cc.xy(2, 1));
@@ -472,10 +509,10 @@ public class DipCoater extends JFrame {
                 //---- downButton ----
                 downButton.setText("DOWN");
                 downButton.setEnabled(false);
-                downButton.addItemListener(new ItemListener() {
+                downButton.addChangeListener(new ChangeListener() {
                     @Override
-                    public void itemStateChanged(ItemEvent e) {
-                        downButtonItemStateChanged(e);
+                    public void stateChanged(ChangeEvent e) {
+                        downButtonStateChanged();
                     }
                 });
                 buttonBar.add(downButton, cc.xy(3, 1));
@@ -527,12 +564,12 @@ public class DipCoater extends JFrame {
     private JPanel panel1;
     private JSpinner speedSpinner;
     private JTextField moveTimeTextField;
-    private JLabel travelLabel;
     private JLabel speedLabel2;
+    private JCheckBox testModeCheckBox;
     private JPanel buttonBar;
     private JButton enterButton;
-    private JToggleButton upButton;
-    private JToggleButton downButton;
+    private JButton upButton;
+    private JButton downButton;
     private JButton backButton;
     private JButton connButton;
     private JButton exitButton;

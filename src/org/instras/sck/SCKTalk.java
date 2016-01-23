@@ -18,6 +18,7 @@ import java.util.Set;
  * Simple class for connecting to ST-V3 with PDC2 firmware
  */
 public class SCKTalk {
+    private boolean testMode = false;
     public int minMotorRPM = 0;
     public int maxMotorRPM = 0;
     private JTextArea console;
@@ -29,11 +30,17 @@ public class SCKTalk {
         this.console = console;
     }
 
+    public void setTestMode(boolean test) {
+        this.testMode = test;
+    }
+
     /**
      * Method to connect to the serial port
      * @param portName
      */
     public void connect(String portName) {
+        if(testMode) return;
+
         serial = new NRSerialPort(portName, 9600);
         serial.connect();
 
@@ -48,6 +55,8 @@ public class SCKTalk {
      * @return
      */
     public String sendCommand(String command) {
+        if(testMode) return "OK";
+
         try {
             command += "\n\r";
             outs.writeBytes(command);
@@ -63,6 +72,8 @@ public class SCKTalk {
      * @return
      */
     public String readResponse() {
+        if(testMode) return "TESTMODE";
+
         try {
             // wait 1 second so data can arrive from ST-V3
             Thread.sleep(1000);
@@ -147,6 +158,8 @@ public class SCKTalk {
      * Method to close the serial port
      */
     public void close() {
+        if(testMode) return;
+
         setModeNormal();
         serial.disconnect();
     }
