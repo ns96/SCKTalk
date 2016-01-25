@@ -14,7 +14,7 @@
       </object>
       <void method="setProperty">
        <string>title</string>
-       <string>Dip Coater 0.1</string>
+       <string>Dip Coater Controller 1.0</string>
       </void>
       <void method="addEvent">
        <object class="com.jformdesigner.model.FormEvent">
@@ -80,10 +80,10 @@
               </void>
               <void method="setProperty">
                <string>text</string>
-               <string>DIP COATER
+               <string>DCOAT CONTROL
 
 SPEED	000 MM/MIN
-TRAVEL	0 MM	
+TRAVEL	+00 MM	
 TIME	0000 S
 MODE	MANUAL</string>
               </void>
@@ -163,7 +163,7 @@ MODE	MANUAL</string>
               <string>javax.swing.JTextField</string>
               <void method="setProperty">
                <string>text</string>
-               <string>move time</string>
+               <string>move time (s)</string>
               </void>
               <void method="setProperty">
                <string>font</string>
@@ -234,6 +234,10 @@ MODE	MANUAL</string>
               <void method="setProperty">
                <string>text</string>
                <string>Test Mode</string>
+              </void>
+              <void method="setProperty">
+               <string>selected</string>
+               <boolean>true</boolean>
               </void>
               <void property="name">
                <string>testModeCheckBox</string>
@@ -409,6 +413,10 @@ MODE	MANUAL</string>
             <void method="setProperty">
              <string>text</string>
              <string>BACK</string>
+            </void>
+            <void method="setProperty">
+             <string>enabled</string>
+             <boolean>false</boolean>
             </void>
             <void property="name">
              <string>backButton</string>

@@ -32,9 +32,11 @@ public class DipCoater extends JFrame {
 
     private String travelDirection = "+";  // the direction of travel + down, - for up
 
-    private String status = "MANUAL";  // Ready, Manual or Auto
+    private String status = "MANUAL";  // Ready, Manual, or Auto
 
     private int enterCount = 0; // keep track of the number of time enter was pressed
+
+    private int backCount = 1; // used to see when to return to the main menu
 
     private boolean stopped = false;
 
@@ -63,7 +65,7 @@ public class DipCoater extends JFrame {
         }
 
         // update the console
-        updateConsole(0);
+        updateDisplay(0);
     }
 
     private void exitButtonActionPerformed() {
@@ -93,6 +95,7 @@ public class DipCoater extends JFrame {
             enterButton.setEnabled(true);
             upButton.setEnabled(true);
             downButton.setEnabled(true);
+            backButton.setEnabled(true);
         }
     }
 
@@ -127,7 +130,8 @@ public class DipCoater extends JFrame {
         Thread thread = new Thread() {
             public void run() {
                 currentTime = 0; // used for calculating distance in real time
-                enterCount= 0; // this needs to be reset otherwise the system may think it still in auto mode
+                enterCount = 0; // this needs to be reset otherwise the system may think it still in auto mode
+                backCount = 0; // reset this so that if the ba ck button is pressed we just stop
                 status = "MANUAL";
 
                 // start moving motor up or down depending on which one of the button were pressed
@@ -144,7 +148,7 @@ public class DipCoater extends JFrame {
                 // start loop now wating for button to be released
                 while (button.getModel().isPressed()) {
                     calculateTravel(currentTime);
-                    updateConsole(currentTime);
+                    updateDisplay(currentTime);
 
                     // pause for a second
                     try {
@@ -170,6 +174,11 @@ public class DipCoater extends JFrame {
         thread.start();
     }
 
+    /**
+     * Calculate the time in seconds the stepper motor should be moving
+     *
+     * @param direction
+     */
     private void calculateMoveTime(String direction) {
         calculateTravel(currentTime);
 
@@ -191,12 +200,20 @@ public class DipCoater extends JFrame {
 
     // this starts the main up and down sequence
     private void enterButtonActionPerformed() {
+        // if we coming from the main menu just display the dcoat control screen
+        if(backCount == 2) {
+            backCount = 1;
+            updateDisplay(0);
+            return;
+        }
+
         enterButton.setEnabled(false);
 
         // set the status to AUTO
         status = "AUTO";
 
         // check that we didn't just enter a move time already for debugging
+        // on the ST-V3 this might just be a variable that stored in memory while device is powered on?
         getMoveTime();
 
         if (enterCount == 0) {
@@ -214,7 +231,7 @@ public class DipCoater extends JFrame {
                     int time = 0;
                     while (!stopped && time < moveTime) {
                         calculateTravel(time);
-                        updateConsole(time);
+                        updateDisplay(time);
 
                         // pause for a second
                         try {
@@ -232,7 +249,7 @@ public class DipCoater extends JFrame {
                     // set the status to ready
                     status = "READY";
                     travelDirection = "+";
-                    updateConsole(0);
+                    updateDisplay(0);
 
                     enterButton.setEnabled(true);
                 }
@@ -253,7 +270,7 @@ public class DipCoater extends JFrame {
                     int time = 0;
                     while (!stopped && time < moveTime) {
                         calculateTravel(time);
-                        updateConsole(currentTime);
+                        updateDisplay(currentTime);
 
                         // pause for a second
                         try {
@@ -278,7 +295,7 @@ public class DipCoater extends JFrame {
                         time = 0;
                         while (!stopped && time < moveTime) {
                             calculateTravel(time);
-                            updateConsole(currentTime);
+                            updateDisplay(currentTime);
 
                             // pause for a second
                             try {
@@ -297,7 +314,7 @@ public class DipCoater extends JFrame {
 
                     status = "READY";
                     travelDirection = "+";
-                    updateConsole(0);
+                    updateDisplay(0);
 
                     enterButton.setEnabled(true);
                 }
@@ -313,6 +330,11 @@ public class DipCoater extends JFrame {
     private void backButtonActionPerformed() {
         stopped = true;
         moveTime = 0;
+        backCount++;
+
+        if(backCount == 2) {
+            displayMainMenu();
+        }
     }
 
     /**
@@ -347,13 +369,27 @@ public class DipCoater extends JFrame {
      * Update the console with needed information
      * @param time
      */
-    private void updateConsole(int time) {
-        String message = "DIP COATER\n" +
+    private void updateDisplay(int time) {
+        String message = "DCOAT CONTROL\n" +
                 "\n" +
-                "SPEED\t" + mmPerMin + " MM/MIN\n" +
-                "TRAVEL\t"  + travelDirection + travel + " MM\n" +
+                "SPEED\t" + String.format("%03d", mmPerMin) + " MM/MIN\n" +
+                "TRAVEL\t"  + travelDirection +  String.format("%02d", travel) + " MM\n" +
                 "TIME\t" + String.format("%04d", time) + " S\n" +
                 "MODE\t" + status;
+
+        consoleTextArea.setText(message);
+    }
+
+    /**
+     * Display the main menu
+     */
+    private void displayMainMenu() {
+        String message = "SELECT MODE\n" +
+                "  ANALOG\n" +
+                "  DIGITAL\n" +
+                "  RAMP\n" +
+                " *DCOAT\n" +
+                "  SETUP";
 
         consoleTextArea.setText(message);
     }
@@ -368,7 +404,7 @@ public class DipCoater extends JFrame {
 
             status = "READY";
             travelDirection = "+";
-            updateConsole(0);
+            updateDisplay(0);
         } catch(NumberFormatException nfe) {}
     }
 
@@ -394,7 +430,7 @@ public class DipCoater extends JFrame {
         CellConstraints cc = new CellConstraints();
 
         //======== this ========
-        setTitle("Dip Coater 0.1");
+        setTitle("Dip Coater Controller 1.0");
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
@@ -421,7 +457,7 @@ public class DipCoater extends JFrame {
                     //---- consoleTextArea ----
                     consoleTextArea.setRows(6);
                     consoleTextArea.setFont(new Font("Monospaced", Font.BOLD, 24));
-                    consoleTextArea.setText("DIP COATER\n\nSPEED\t000 MM/MIN\nTRAVEL\t0 MM\t\nTIME\t0000 S\nMODE\tMANUAL");
+                    consoleTextArea.setText("DCOAT CONTROL\n\nSPEED\t000 MM/MIN\nTRAVEL\t+00 MM\t\nTIME\t0000 S\nMODE\tMANUAL");
                     scrollPane1.setViewportView(consoleTextArea);
                 }
                 contentPanel.add(scrollPane1, cc.xy(1, 1));
@@ -454,7 +490,7 @@ public class DipCoater extends JFrame {
                     panel1.add(speedSpinner, cc.xy(1, 1));
 
                     //---- moveTimeTextField ----
-                    moveTimeTextField.setText("move time");
+                    moveTimeTextField.setText("move time (s)");
                     moveTimeTextField.setFont(new Font("Tahoma", Font.BOLD, 12));
                     moveTimeTextField.addActionListener(new ActionListener() {
                         @Override
@@ -471,6 +507,7 @@ public class DipCoater extends JFrame {
 
                     //---- testModeCheckBox ----
                     testModeCheckBox.setText("Test Mode");
+                    testModeCheckBox.setSelected(true);
                     panel1.add(testModeCheckBox, cc.xy(1, 9));
                 }
                 contentPanel.add(panel1, cc.xy(3, 1, CellConstraints.DEFAULT, CellConstraints.FILL));
@@ -519,6 +556,7 @@ public class DipCoater extends JFrame {
 
                 //---- backButton ----
                 backButton.setText("BACK");
+                backButton.setEnabled(false);
                 backButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
