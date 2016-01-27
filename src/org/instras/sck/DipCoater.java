@@ -38,9 +38,9 @@ public class DipCoater extends JFrame {
 
     private int backCount = 1; // used to see when to return to the main menu
 
-    private boolean stopped = false;
+    private boolean stopped = false; // used for stopping the motor moving
 
-    private SCKTalk sckTalk = new SCKTalk();
+    private SCKTalk sckTalk = new SCKTalk(); // thjis provides serial port access to the ST-V3
 
     public DipCoater() {
         initComponents();
@@ -64,7 +64,7 @@ public class DipCoater extends JFrame {
             }
         }
 
-        // update the console
+        // update the display
         updateDisplay(0);
     }
 
