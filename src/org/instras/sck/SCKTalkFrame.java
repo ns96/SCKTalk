@@ -22,26 +22,27 @@ public class SCKTalkFrame extends JFrame {
         // Generated using JFormDesigner non-commercial license
         dialogPane = new JPanel();
         contentPanel = new JPanel();
-        button5 = new JButton();
+        connectButton = new JButton();
         label1 = new JLabel();
         comTextField = new JTextField();
-        label2 = new JLabel();
-        baudTextField = new JTextField();
-        button1 = new JButton();
-        button2 = new JButton();
-        button3 = new JButton();
+        stopButton = new JButton();
+        upButton = new JButton();
+        downButton = new JButton();
         label3 = new JLabel();
-        textField3 = new JTextField();
-        button4 = new JButton();
-        textField1 = new JTextField();
+        incrementTextField = new JTextField();
+        setPWMButton = new JButton();
+        setPWMTextField = new JTextField();
+        setRPMButton = new JButton();
+        setRPMTextField = new JTextField();
+        motorProfileButton = new JButton();
         scrollPane1 = new JScrollPane();
-        textArea1 = new JTextArea();
+        consoleTextArea = new JTextArea();
         buttonBar = new JPanel();
         okButton = new JButton();
         CellConstraints cc = new CellConstraints();
 
         //======== this ========
-        setTitle("SCKTalk v0.1 (05/05/2013)");
+        setTitle("SCKTalk v0.2 (11/25/2014)");
         Container contentPane = getContentPane();
         contentPane.setLayout(new BorderLayout());
 
@@ -74,51 +75,52 @@ public class SCKTalkFrame extends JFrame {
                         new RowSpec(RowSpec.FILL, Sizes.DEFAULT, FormSpec.DEFAULT_GROW)
                     }));
 
-                //---- button5 ----
-                button5.setText("Connect");
-                contentPanel.add(button5, cc.xy(1, 1));
+                //---- connectButton ----
+                connectButton.setText("Connect");
+                contentPanel.add(connectButton, cc.xy(1, 1));
 
                 //---- label1 ----
                 label1.setText(" COM");
                 contentPanel.add(label1, cc.xy(3, 1));
                 contentPanel.add(comTextField, cc.xy(5, 1));
 
-                //---- label2 ----
-                label2.setText(" Baud");
-                contentPanel.add(label2, cc.xy(7, 1));
+                //---- stopButton ----
+                stopButton.setText("Stop");
+                contentPanel.add(stopButton, cc.xy(1, 3));
 
-                //---- baudTextField ----
-                baudTextField.setText("9600");
-                contentPanel.add(baudTextField, cc.xy(9, 1));
+                //---- upButton ----
+                upButton.setText("Up");
+                contentPanel.add(upButton, cc.xy(3, 3));
 
-                //---- button1 ----
-                button1.setText("Stop");
-                contentPanel.add(button1, cc.xy(1, 3));
-
-                //---- button2 ----
-                button2.setText("Up");
-                contentPanel.add(button2, cc.xy(3, 3));
-
-                //---- button3 ----
-                button3.setText("Down");
-                contentPanel.add(button3, cc.xy(5, 3));
+                //---- downButton ----
+                downButton.setText("Down");
+                contentPanel.add(downButton, cc.xy(5, 3));
 
                 //---- label3 ----
                 label3.setText(" Increment");
                 contentPanel.add(label3, cc.xy(7, 3));
 
-                //---- textField3 ----
-                textField3.setText("10");
-                contentPanel.add(textField3, cc.xy(9, 3));
+                //---- incrementTextField ----
+                incrementTextField.setText("10");
+                contentPanel.add(incrementTextField, cc.xy(9, 3));
 
-                //---- button4 ----
-                button4.setText("Set PWM");
-                contentPanel.add(button4, cc.xy(1, 5));
-                contentPanel.add(textField1, cc.xywh(3, 5, 7, 1));
+                //---- setPWMButton ----
+                setPWMButton.setText("Set PWM");
+                contentPanel.add(setPWMButton, cc.xy(1, 5));
+                contentPanel.add(setPWMTextField, cc.xy(3, 5));
+
+                //---- setRPMButton ----
+                setRPMButton.setText("Set RPM");
+                contentPanel.add(setRPMButton, cc.xy(5, 5));
+                contentPanel.add(setRPMTextField, cc.xy(7, 5));
+
+                //---- motorProfileButton ----
+                motorProfileButton.setText("Motor Profile");
+                contentPanel.add(motorProfileButton, cc.xy(9, 5));
 
                 //======== scrollPane1 ========
                 {
-                    scrollPane1.setViewportView(textArea1);
+                    scrollPane1.setViewportView(consoleTextArea);
                 }
                 contentPanel.add(scrollPane1, cc.xywh(1, 7, 9, 1));
             }
@@ -152,20 +154,21 @@ public class SCKTalkFrame extends JFrame {
     // Generated using JFormDesigner non-commercial license
     private JPanel dialogPane;
     private JPanel contentPanel;
-    private JButton button5;
+    private JButton connectButton;
     private JLabel label1;
     private JTextField comTextField;
-    private JLabel label2;
-    private JTextField baudTextField;
-    private JButton button1;
-    private JButton button2;
-    private JButton button3;
+    private JButton stopButton;
+    private JButton upButton;
+    private JButton downButton;
     private JLabel label3;
-    private JTextField textField3;
-    private JButton button4;
-    private JTextField textField1;
+    private JTextField incrementTextField;
+    private JButton setPWMButton;
+    private JTextField setPWMTextField;
+    private JButton setRPMButton;
+    private JTextField setRPMTextField;
+    private JButton motorProfileButton;
     private JScrollPane scrollPane1;
-    private JTextArea textArea1;
+    private JTextArea consoleTextArea;
     private JPanel buttonBar;
     private JButton okButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables
