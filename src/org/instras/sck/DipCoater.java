@@ -42,6 +42,10 @@ public class DipCoater extends JFrame {
 
     private SCKTalk sckTalk = new SCKTalk(); // thjis provides serial port access to the ST-V3
 
+    private DipCoaterSimulator dipCoaterSimulator;
+
+    private int simulatorPosition = 0;
+
     public DipCoater() {
         initComponents();
     }
@@ -97,6 +101,13 @@ public class DipCoater extends JFrame {
             downButton.setEnabled(true);
             backButton.setEnabled(true);
         }
+
+        // display the simulator now
+        if(testModeCheckBox.isSelected()) {
+            dipCoaterSimulator = new DipCoaterSimulator();
+            dipCoaterSimulator.setVisible(true);
+            simulatorPosition = dipCoaterSimulator.getPosition();
+        }
     }
 
     /**
@@ -145,10 +156,20 @@ public class DipCoater extends JFrame {
 
                 sckTalk.sendCommand("SET S1 " + speed);
 
-                // start loop now wating for button to be released
+                // start loop now waiting for the button to be released
                 while (button.getModel().isPressed()) {
                     calculateTravel(currentTime);
                     updateDisplay(currentTime);
+
+                    if (dipCoaterSimulator != null) {
+                        if (button == upButton) {
+                            simulatorPosition += 1;
+                        } else {
+                            simulatorPosition -= 1;
+                        }
+
+                        dipCoaterSimulator.setPosition(simulatorPosition);
+                    }
 
                     // pause for a second
                     try {
@@ -189,6 +210,9 @@ public class DipCoater extends JFrame {
             //System.out.println("Total Travel " + travelDirection + travel);
             moveTime = 0; // reset the move time
         }
+
+        // update the move time label for debugging purposes
+        moveTimeLabel.setText(moveTime + " s");
     }
 
     /**
@@ -233,6 +257,11 @@ public class DipCoater extends JFrame {
                         calculateTravel(time);
                         updateDisplay(time);
 
+                        if (dipCoaterSimulator != null) {
+                            simulatorPosition += 1;
+                            dipCoaterSimulator.setPosition(simulatorPosition);
+                        }
+
                         // pause for a second
                         try {
                             sleep(1000);
@@ -272,6 +301,11 @@ public class DipCoater extends JFrame {
                         calculateTravel(time);
                         updateDisplay(currentTime);
 
+                        if (dipCoaterSimulator != null) {
+                            simulatorPosition -= 1;
+                            dipCoaterSimulator.setPosition(simulatorPosition);
+                        }
+
                         // pause for a second
                         try {
                             sleep(1000);
@@ -296,6 +330,11 @@ public class DipCoater extends JFrame {
                         while (!stopped && time < moveTime) {
                             calculateTravel(time);
                             updateDisplay(currentTime);
+
+                            if (dipCoaterSimulator != null) {
+                                simulatorPosition += 1;
+                                dipCoaterSimulator.setPosition(simulatorPosition);
+                            }
 
                             // pause for a second
                             try {
@@ -404,6 +443,8 @@ public class DipCoater extends JFrame {
 
             status = "READY";
             travelDirection = "+";
+            moveTimeLabel.setText(time + " s");
+
             updateDisplay(0);
         } catch(NumberFormatException nfe) {}
     }
@@ -418,6 +459,7 @@ public class DipCoater extends JFrame {
         panel1 = new JPanel();
         speedSpinner = new JSpinner();
         moveTimeTextField = new JTextField();
+        moveTimeLabel = new JLabel();
         speedLabel2 = new JLabel();
         testModeCheckBox = new JCheckBox();
         buttonBar = new JPanel();
@@ -427,10 +469,9 @@ public class DipCoater extends JFrame {
         backButton = new JButton();
         connButton = new JButton();
         exitButton = new JButton();
-        CellConstraints cc = new CellConstraints();
 
         //======== this ========
-        setTitle("Dip Coater Controller 1.0");
+        setTitle("Dip Coater Controller 1.1");
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
@@ -442,13 +483,13 @@ public class DipCoater extends JFrame {
 
         //======== dialogPane ========
         {
-            dialogPane.setBorder(Borders.createEmptyBorder("7dlu, 7dlu, 7dlu, 7dlu"));
+            dialogPane.setBorder(Borders.createEmptyBorder("9dlu, 9dlu, 9dlu, 9dlu"));
             dialogPane.setLayout(new BorderLayout());
 
             //======== contentPanel ========
             {
                 contentPanel.setLayout(new FormLayout(
-                    "default:grow, max(default;5dlu), default:grow",
+                    "default:grow, [5dlu,default], default:grow",
                     "default"));
 
                 //======== scrollPane1 ========
@@ -460,23 +501,13 @@ public class DipCoater extends JFrame {
                     consoleTextArea.setText("DCOAT CONTROL\n\nSPEED\t000 MM/MIN\nTRAVEL\t+00 MM\t\nTIME\t0000 S\nMODE\tMANUAL");
                     scrollPane1.setViewportView(consoleTextArea);
                 }
-                contentPanel.add(scrollPane1, cc.xy(1, 1));
+                contentPanel.add(scrollPane1, CC.xy(1, 1));
 
                 //======== panel1 ========
                 {
                     panel1.setLayout(new FormLayout(
-                        ColumnSpec.decodeSpecs("default:grow"),
-                        new RowSpec[] {
-                            new RowSpec(RowSpec.FILL, Sizes.DEFAULT, FormSpec.DEFAULT_GROW),
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            new RowSpec(RowSpec.FILL, Sizes.DEFAULT, FormSpec.NO_GROW)
-                        }));
+                        "default:grow",
+                        "fill:default:grow, 3*($lgap, default), $lgap, fill:default"));
 
                     //---- speedSpinner ----
                     speedSpinner.setFont(new Font("Tahoma", Font.BOLD, 18));
@@ -487,7 +518,7 @@ public class DipCoater extends JFrame {
                             speedSpinnerStateChanged();
                         }
                     });
-                    panel1.add(speedSpinner, cc.xy(1, 1));
+                    panel1.add(speedSpinner, CC.xy(1, 1));
 
                     //---- moveTimeTextField ----
                     moveTimeTextField.setText("move time (s)");
@@ -498,27 +529,32 @@ public class DipCoater extends JFrame {
                             moveTimeTextFieldActionPerformed();
                         }
                     });
-                    panel1.add(moveTimeTextField, cc.xy(1, 3));
+                    panel1.add(moveTimeTextField, CC.xy(1, 3));
+
+                    //---- moveTimeLabel ----
+                    moveTimeLabel.setText("moveTime");
+                    moveTimeLabel.setForeground(new Color(255, 51, 51));
+                    panel1.add(moveTimeLabel, CC.xy(1, 5));
 
                     //---- speedLabel2 ----
                     speedLabel2.setText("0 rpm");
                     speedLabel2.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    panel1.add(speedLabel2, cc.xy(1, 7));
+                    panel1.add(speedLabel2, CC.xy(1, 7));
 
                     //---- testModeCheckBox ----
                     testModeCheckBox.setText("Test Mode");
                     testModeCheckBox.setSelected(true);
-                    panel1.add(testModeCheckBox, cc.xy(1, 9));
+                    panel1.add(testModeCheckBox, CC.xy(1, 9));
                 }
-                contentPanel.add(panel1, cc.xy(3, 1, CellConstraints.DEFAULT, CellConstraints.FILL));
+                contentPanel.add(panel1, CC.xy(3, 1, CC.DEFAULT, CC.FILL));
             }
             dialogPane.add(contentPanel, BorderLayout.CENTER);
 
             //======== buttonBar ========
             {
-                buttonBar.setBorder(Borders.createEmptyBorder("5dlu, 0dlu, 0dlu, 0dlu"));
+                buttonBar.setBorder(Borders.createEmptyBorder("4dlu, 0dlu, 0dlu, 0dlu"));
                 buttonBar.setLayout(new FormLayout(
-                    "default:grow, default:grow, default:grow, default:grow, default:grow, default:grow",
+                    "6*(default:grow)",
                     "default:grow"));
 
                 //---- enterButton ----
@@ -530,7 +566,7 @@ public class DipCoater extends JFrame {
                         enterButtonActionPerformed();
                     }
                 });
-                buttonBar.add(enterButton, cc.xy(1, 1));
+                buttonBar.add(enterButton, CC.xy(1, 1));
 
                 //---- upButton ----
                 upButton.setText("UP");
@@ -541,7 +577,7 @@ public class DipCoater extends JFrame {
                         upButtonStateChanged();
                     }
                 });
-                buttonBar.add(upButton, cc.xy(2, 1));
+                buttonBar.add(upButton, CC.xy(2, 1));
 
                 //---- downButton ----
                 downButton.setText("DOWN");
@@ -552,7 +588,7 @@ public class DipCoater extends JFrame {
                         downButtonStateChanged();
                     }
                 });
-                buttonBar.add(downButton, cc.xy(3, 1));
+                buttonBar.add(downButton, CC.xy(3, 1));
 
                 //---- backButton ----
                 backButton.setText("BACK");
@@ -563,7 +599,7 @@ public class DipCoater extends JFrame {
                         backButtonActionPerformed();
                     }
                 });
-                buttonBar.add(backButton, cc.xy(4, 1));
+                buttonBar.add(backButton, CC.xy(4, 1));
 
                 //---- connButton ----
                 connButton.setText("CONN");
@@ -573,7 +609,7 @@ public class DipCoater extends JFrame {
                         connButtonActionPerformed();
                     }
                 });
-                buttonBar.add(connButton, cc.xy(5, 1));
+                buttonBar.add(connButton, CC.xy(5, 1));
 
                 //---- exitButton ----
                 exitButton.setText("EXIT");
@@ -583,7 +619,7 @@ public class DipCoater extends JFrame {
                         exitButtonActionPerformed();
                     }
                 });
-                buttonBar.add(exitButton, cc.xy(6, 1));
+                buttonBar.add(exitButton, CC.xy(6, 1));
             }
             dialogPane.add(buttonBar, BorderLayout.SOUTH);
         }
@@ -602,6 +638,7 @@ public class DipCoater extends JFrame {
     private JPanel panel1;
     private JSpinner speedSpinner;
     private JTextField moveTimeTextField;
+    private JLabel moveTimeLabel;
     private JLabel speedLabel2;
     private JCheckBox testModeCheckBox;
     private JPanel buttonBar;
