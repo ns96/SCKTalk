@@ -44,12 +44,17 @@ public class DipCoater extends JFrame {
 
     private DipCoaterSimulator dipCoaterSimulator;
 
-    private int simulatorPosition = 0;
+    private int simulatorPosition = 0; // used to set the position of the simulated stage
+
+    private int simulatorIncrement = 1; // used to simulate the speed of the stage values are 1,2,3,4
 
     public DipCoater() {
         initComponents();
     }
 
+    /**
+     * Set the current speed
+     */
     private void speedSpinnerStateChanged() {
         mmPerMin = (Integer) speedSpinner.getValue();
 
@@ -63,14 +68,33 @@ public class DipCoater extends JFrame {
             double timeInMinutes = new Double(travel)/new Double(mmPerMin);
             moveTime = (int)(timeInMinutes*60);
 
+            moveTimeLabel.setText(moveTime + " S");
+
             if(hasValue) {
                 moveTimeTextField.setText("" + moveTime);
             }
         }
 
+        // set the simulated stage speed
+        setSimulatorSpeed();
+
         // update the display
         updateDisplay(0);
     }
+
+    /**
+     * Method to set the simulator stage speed
+     */
+    private void setSimulatorSpeed() {
+        int s = mmPerMin/20;
+
+        if(s == 0) {
+            simulatorIncrement = 1;
+        } else {
+            simulatorIncrement = s;
+        }
+    }
+
 
     private void exitButtonActionPerformed() {
         // must catch an exception in case the ST-V3 in not connected
@@ -104,7 +128,7 @@ public class DipCoater extends JFrame {
 
         // display the simulator now
         if(testModeCheckBox.isSelected()) {
-            dipCoaterSimulator = new DipCoaterSimulator();
+            dipCoaterSimulator = new DipCoaterSimulator(this);
             dipCoaterSimulator.setVisible(true);
             simulatorPosition = dipCoaterSimulator.getPosition();
         }
@@ -163,9 +187,9 @@ public class DipCoater extends JFrame {
 
                     if (dipCoaterSimulator != null) {
                         if (button == upButton) {
-                            simulatorPosition += 1;
+                            simulatorPosition += simulatorIncrement;
                         } else {
-                            simulatorPosition -= 1;
+                            simulatorPosition -= simulatorIncrement;
                         }
 
                         dipCoaterSimulator.setPosition(simulatorPosition);
@@ -258,7 +282,7 @@ public class DipCoater extends JFrame {
                         updateDisplay(time);
 
                         if (dipCoaterSimulator != null) {
-                            simulatorPosition += 1;
+                            simulatorPosition += simulatorIncrement;
                             dipCoaterSimulator.setPosition(simulatorPosition);
                         }
 
@@ -302,7 +326,7 @@ public class DipCoater extends JFrame {
                         updateDisplay(currentTime);
 
                         if (dipCoaterSimulator != null) {
-                            simulatorPosition -= 1;
+                            simulatorPosition -= simulatorIncrement;
                             dipCoaterSimulator.setPosition(simulatorPosition);
                         }
 
@@ -332,7 +356,7 @@ public class DipCoater extends JFrame {
                             updateDisplay(currentTime);
 
                             if (dipCoaterSimulator != null) {
-                                simulatorPosition += 1;
+                                simulatorPosition += simulatorIncrement;
                                 dipCoaterSimulator.setPosition(simulatorPosition);
                             }
 
