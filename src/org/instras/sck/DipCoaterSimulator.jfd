@@ -1,11 +1,10 @@
-JFDML JFormDesigner: "5.2.2.2.228" Java: "1.8.0_25" encoding: "UTF-8"
+JFDML JFormDesigner: "5.2.1.0.138" Java: "1.8.0_25" encoding: "UTF-8"
 
 new FormModel {
 	contentType: "form/swing"
 	root: new FormRoot {
 		add( new FormWindow( "javax.swing.JDialog", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 			name: "this"
-			"title": "Dip Coater Simulator"
 			"defaultCloseOperation": 2
 			"$sizePolicy": 1
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.BorderLayout ) ) {
@@ -19,9 +18,9 @@ new FormModel {
 						"majorTickSpacing": 10
 						"minorTickSpacing": 1
 						"paintTicks": true
-						"paintLabels": true
 						"value": 90
 						"enabled": false
+						"paintLabels": true
 					}, new FormLayoutConstraints( class java.lang.String ) {
 						"value": "Center"
 					} )
@@ -30,19 +29,11 @@ new FormModel {
 				} )
 				add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.GridBagLayout ) {
 					"$columnSpecs": "0:1.0, 80"
-					"$rowSpecs": "0"
 					"$hGap": 5
 					"$vGap": 5
 				} ) {
 					name: "buttonBar"
 					"border": new javax.swing.border.EmptyBorder( 12, 0, 0, 0 )
-					add( new FormComponent( "javax.swing.JButton" ) {
-						name: "okButton"
-						"text": "OK"
-					}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-						"gridx": 1
-						"gridy": 0
-					} )
 				}, new FormLayoutConstraints( class java.lang.String ) {
 					"value": "South"
 				} )
