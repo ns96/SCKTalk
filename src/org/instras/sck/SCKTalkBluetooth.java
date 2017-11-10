@@ -123,9 +123,16 @@ public class SCKTalkBluetooth implements DiscoveryListener{
 
         for(int i = 1000; i <= 2000; i += increment) {
             sendCommand("SET " + pin + " " + i);
-            Thread.sleep(4000);
+            Thread.sleep(8000);
 
-            Integer rpm = new Integer(sendCommand("GET RPM"));
+            Integer rpm = -1;
+            String response = sendCommand("GET RPM");
+            try {
+                rpm = new Integer(response);
+            } catch(NumberFormatException nfe) {
+                System.out.println("Invalid RPM data: " + response);
+            }
+
             motorProfileMap.put(i, rpm);
 
             // set the min and max rpm
@@ -169,6 +176,8 @@ public class SCKTalkBluetooth implements DiscoveryListener{
 
     @Override
     public void servicesDiscovered(int i, ServiceRecord[] serviceRecords) {
+        //System.out.println("Services discovered ..." + serviceRecords[0]);
+
         if(serviceRecords !=null && serviceRecords.length > 0) {
             connectionURL = serviceRecords[0].getConnectionURL(0,false);
         }

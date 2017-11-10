@@ -127,7 +127,15 @@ public class SCKTalk {
             sendCommand("SET " + pin + " " + i);
             Thread.sleep(4000);
 
-            Integer rpm = new Integer(sendCommand("GET RPM"));
+            Integer rpm = -1;
+            String response = sendCommand("GET RPM");
+
+            try {
+                rpm = new Integer(response);
+            } catch(NumberFormatException nfe) {
+                System.out.println("Invalid RPM data: " + response);
+            }
+
             motorProfileMap.put(i, rpm);
 
             // set the min and max rpm
@@ -171,13 +179,14 @@ public class SCKTalk {
     public static void main(String[] args) throws Exception {
         SCKTalk sckTalk = new SCKTalk();
 
-        sckTalk.connect("COM8");
+        sckTalk.connect("COM12");
 
         String response = sckTalk.setModePC();
 
         if(response.equals("OK")) {
             System.out.println("Connected to ST-V3\n\n");
-            //sckTalk.getMotorProfile(10, "S1");
+            sckTalk.getMotorProfile(50, "S1");
+            sckTalk.setModeNormal();
         }
 
         /*Set<String> ports = NRSerialPort.getAvailableSerialPorts();
