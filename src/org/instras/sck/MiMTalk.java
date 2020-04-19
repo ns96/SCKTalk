@@ -115,12 +115,14 @@ public class MiMTalk {
     }
 
     /**
-     * Function to kick start the motor to prvent it from automatically shutting down
+     * Function to kick start the motor to prevent it from automatically shutting down
      * when trying to spin at rpms below 1000 rpms
+     * @param kickstart The kickstart value
      */
-    public void kickStart() {
+    public void kickStart(int kickstart) {
         try {
-            sendCommand("SetPWM,200", false);
+            //sendCommand("SetPWM,200", false);
+            sendCommand("SetPWM," + kickstart, false);
             Thread.sleep(50);
             System.out.println("Kick Started ...\n\n");
         } catch (InterruptedException e) {
@@ -139,17 +141,20 @@ public class MiMTalk {
         ArrayList<Double> xlist = new ArrayList<Double>();
         ArrayList<Double> ylist = new ArrayList<Double>();
 
-        kickStart();
+        kickStart(200); // 200 for regular 2838, 75 for ball bearing 2838
 
         print("PWM\tRPM");
 
-        for(int i = 100; i <= 1000   ; i += increment) {
+        for(int i = 110; i <= 1000   ; i += increment) {
             sendCommand("SetPWM," + i);
-            Thread.sleep(5000);
+            //Thread.sleep(5000);
 
             Double rpm = -1.0;
             String response = sendCommand("GetRPM");
             response = getResponseValue(response);
+
+            // wait 2 seconds
+            Thread.sleep(2000);
 
             try {
                 rpm = new Double(response);
@@ -181,6 +186,18 @@ public class MiMTalk {
         return motorProfileMap;
     }
 
+    public void rampToRPM(int desiredRPM, float percentLower) {
+        try {
+            int lowerRPM = (int)(desiredRPM - desiredRPM*percentLower);
+            sendCommand("SetRPM," + lowerRPM);
+            Thread.sleep(50);
+            sendCommand("SetRPM," + desiredRPM);
+            System.out.println("Desired RPM: " + desiredRPM + " || Lower RPM" + lowerRPM + "\n");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Method to cycle motor up and down quickly
      * @param maxRPM
@@ -189,18 +206,26 @@ public class MiMTalk {
      */
     public void cycleMotor(int maxRPM, int step) throws InterruptedException {
         String rpm;
-        for(int i = 0; i <= 5000; i += step) {
+
+        int i;
+        int lastRPM = 0;
+        for(i = step; i <= maxRPM; i += step) {
             sendCommand("SetRPM," + i);
-            //Thread.sleep(100);
+            //rampToRPM(i, 0.20f);
             rpm = sendCommand("GetRPM");
             rpm = getResponseValue(rpm);
             System.out.println( i + "\t" + rpm);
+            lastRPM = Integer.parseInt(rpm);
+            Thread.sleep(2000);
         }
 
-        Thread.sleep(10000);
+        Thread.sleep(5000);
         rpm = sendCommand("GetRPM");
         rpm = getResponseValue(rpm);
-        System.out.println("5000\t" + rpm);
+        float currentRPM = Integer.parseInt(rpm);
+        float diff = (lastRPM - currentRPM);
+        float percentDiff = (diff/currentRPM)*100.0f;
+        System.out.println((i - step) + "@5s\t" + rpm + "\tDiff " +  diff + "/" + percentDiff);
         sendCommand("SetRPM,0");
         Thread.sleep(5000);
     }
@@ -231,13 +256,24 @@ public class MiMTalk {
     }
 
     /**
+     * Method to set the slope intercept start pwm used to start and accurately set the RPM by doing a linear fit
+     */
+    public void setMotorParameters() {
+        System.out.println("Setting Motor Parameters");
+
+        System.out.println(sendCommand("SetStartPWM,0"));
+        System.out.println(sendCommand("SetSlope,930"));
+        System.out.println(sendCommand("SetIntercept,350"));
+    }
+
+    /**
      * Main method. This is just to test library now
      * @param args
      */
     public static void main(String[] args) throws Exception {
         MiMTalk miMTalk = new MiMTalk();
 
-        miMTalk.connect("COM15");
+        miMTalk.connect("COM8");
 
         String response = miMTalk.getVersion();
 
@@ -245,35 +281,39 @@ public class MiMTalk {
             System.out.println("Connected to MIM\n");
             miMTalk.sendCommand("BLDCon");
 
-            for(int i = 0; i <= 1200; i += 1) {
+            /*
+            for(int i = 0; i <= 1000; i += 50) {
                 if(i == 0) {
-                    System.out.println( "S@1200R\tRPM");
+                    System.out.println( "S\tRPM");
                     miMTalk.sendCommand("SetRPM,1200");
                 }
 
-                Thread.sleep(1000);
+                Thread.sleep(2000);
                 String rpm = miMTalk.sendCommand("GetRPM");
                 rpm = miMTalk.getResponseValue(rpm);
                 System.out.println( i + "\t" + rpm);
             }
 
-            /**
-            for(int i = 0; i < 25d; i++) {
+            /*/
+            miMTalk.setMotorParameters();
+
+            for(int i = 0; i < 50d; i++) {
                 miMTalk.sendCommand("BLDCon");
-                miMTalk.cycleMotor(5000, 500);
+                miMTalk.cycleMotor(5000, 3000);
                 miMTalk.sendCommand("BLDCoff");
             }
-            */
+            //*/
 
-            /**ArrayList<LinearRegression> lms = new ArrayList<LinearRegression>();
+            /**
+            ArrayList<LinearRegression> lms = new ArrayList<LinearRegression>();
 
-            for(int i = 0; i < 2; i++) {
+            for(int i = 0; i < 30; i++) {
                 LinearRegression lm = new LinearRegression(miMTalk.getMotorProfile(50));
                 lms.add(lm);
                 miMTalk.print(i + ":: " + lm.toString());
 
                 miMTalk.sendCommand("BLDCoff");
-                Thread.sleep(120000);
+                Thread.sleep(20000);
                 miMTalk.sendCommand("BLDCon");
                 Thread.sleep(5000);
             }
@@ -296,10 +336,11 @@ public class MiMTalk {
 
             System.out.println("Avg slope: " + slope / size);
             System.out.println("Avg intercept: " + intercept/size);
-            */
+
+            **/
 
             // stop the motor just in case we didn't before
-            miMTalk.sendCommand("BLDCoff");
+            miMTalk.sendCommand("ESCoff");
         }
 
         System.exit(0);
