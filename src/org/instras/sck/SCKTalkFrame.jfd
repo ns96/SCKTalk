@@ -1,47 +1,73 @@
-JFDML JFormDesigner: "5.1.0.2.64" Java: "1.6.0_31" encoding: "UTF-8"
+JFDML JFormDesigner: "7.0.4.0.360" Java: "1.8.0_202-release" encoding: "UTF-8"
 
 new FormModel {
 	contentType: "form/swing"
 	root: new FormRoot {
 		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 			name: "this"
-			"title": "SCKTalk v0.2 (11/25/2014)"
+			"title": "SCKTalk [MiM-nano] v1.0 (06/11/2021)"
+			"defaultCloseOperation": 3
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 				name: "dialogPane"
 				"border": sfield com.jgoodies.forms.factories.Borders DIALOG_BORDER
 				add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class com.jgoodies.forms.layout.FormLayout ) {
 					"$columnSpecs": "default, labelcompgap, default, labelcompgap, default, labelcompgap, default, labelcompgap, default:grow"
-					"$rowSpecs": "default, linegap, default, linegap, default, linegap, fill:default:grow"
+					"$rowSpecs": "default, linegap, default, linegap, default, linegap, fill:default:grow, linegap, default"
 				} ) {
 					name: "contentPanel"
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "connectButton"
-						"text": "Connect"
+						"text": "CONNECT"
+						"background": sfield java.awt.Color yellow
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "connectButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 1
 						"gridY": 1
 					} )
 					add( new FormComponent( "javax.swing.JLabel" ) {
 						name: "label1"
-						"text": " COM"
+						"text": " COMM Port"
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 3
 						"gridY": 1
 					} )
-					add( new FormComponent( "javax.swing.JTextField" ) {
-						name: "comTextField"
+					add( new FormComponent( "javax.swing.JComboBox" ) {
+						name: "portComboBox"
+						"editable": true
+						"model": new javax.swing.DefaultComboBoxModel {
+							selectedItem: "COM1"
+							addElement( "COM1" )
+							addElement( "COM2" )
+							addElement( "COM3" )
+							addElement( "COM4" )
+							addElement( "COM5" )
+							addElement( "COM6" )
+						}
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 5
+						"gridWidth": 3
 					} )
 					add( new FormComponent( "javax.swing.JButton" ) {
-						name: "stopButton"
-						"text": "Stop"
+						name: "closePortButton"
+						"text": "Close Port"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "closePortButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 9
+						"gridY": 1
+					} )
+					add( new FormComponent( "javax.swing.JToggleButton" ) {
+						name: "startStopButton"
+						"text": "Start/Stop"
+						"background": new com.jformdesigner.model.SwingColor( "Button.background" )
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "startStopButtonActionPerformed", true ) )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 1
 						"gridY": 3
 					} )
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "upButton"
 						"text": "Up"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "upButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 3
 						"gridY": 3
@@ -49,80 +75,155 @@ new FormModel {
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "downButton"
 						"text": "Down"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "downButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 5
 						"gridY": 3
 					} )
 					add( new FormComponent( "javax.swing.JLabel" ) {
 						name: "label3"
-						"text": " Increment"
+						"text": " Increment (rpm)"
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 7
 						"gridY": 3
 					} )
 					add( new FormComponent( "javax.swing.JTextField" ) {
 						name: "incrementTextField"
-						"text": "10"
+						"text": "100"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "incrementTextFieldActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 9
 						"gridY": 3
 					} )
-					add( new FormComponent( "javax.swing.JButton" ) {
-						name: "setPWMButton"
-						"text": "Set PWM"
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "label5"
+						"text": "Set Speed"
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 1
 						"gridY": 5
 					} )
 					add( new FormComponent( "javax.swing.JTextField" ) {
-						name: "setPWMTextField"
+						name: "speedTextField"
+						"text": "3250"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "speedTextFieldActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 3
 						"gridY": 5
+						"gridWidth": 3
 					} )
 					add( new FormComponent( "javax.swing.JButton" ) {
-						name: "setRPMButton"
-						"text": "Set RPM"
-					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
-						"gridX": 5
-						"gridY": 5
-					} )
-					add( new FormComponent( "javax.swing.JTextField" ) {
-						name: "setRPMTextField"
+						name: "rampButton"
+						"text": "Run Ramp Sequence"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "rampButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 7
 						"gridY": 5
 					} )
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "motorProfileButton"
-						"text": "Motor Profile"
+						"text": "Run Motor Profile"
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 9
 						"gridY": 5
 					} )
 					add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
-						name: "scrollPane1"
+						name: "scrollPane2"
 						add( new FormComponent( "javax.swing.JTextArea" ) {
-							name: "consoleTextArea"
+							name: "rampTextArea"
+							"text": "Step, Speed (rpm), Dwell Time (s)\n1, 500, 30\n2, 1400, 40\n3, 3200, 60\n4, 1500, 10"
 						} )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridY": 7
-						"gridWidth": 9
+						"gridWidth": 5
+					} )
+					add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+						name: "scrollPane1"
+						add( new FormComponent( "javax.swing.JTextArea" ) {
+							name: "consoleTextArea"
+							"text": "Output Console:"
+						} )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridY": 7
+						"gridWidth": 3
+						"gridX": 7
+					} )
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "label2"
+						"text": "Spin Speed (rpm)"
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 1
+						"gridY": 9
+					} )
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "speedLabel"
+						"text": "00000"
+						"foreground": sfield java.awt.Color red
+						"font": new java.awt.Font( "Segoe UI", 1, 12 )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 3
+						"gridY": 9
+					} )
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "label4"
+						"text": "Spin Time (s)"
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 5
+						"gridY": 9
+					} )
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "spinTimeLabel"
+						"text": "00000"
+						"foreground": sfield java.awt.Color red
+						"font": new java.awt.Font( "Segoe UI", 1, 12 )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 7
+						"gridY": 9
+					} )
+					add( new FormComponent( "javax.swing.JLabel" ) {
+						name: "rampStepLabel"
+						"text": "Ramp Step # 0"
+						"font": new java.awt.Font( "Segoe UI", 1, 12 )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 9
+						"gridY": 9
 					} )
 				}, new FormLayoutConstraints( class java.lang.String ) {
 					"value": "Center"
 				} )
 				add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class com.jgoodies.forms.layout.FormLayout ) {
-					"$columnSpecs": "glue, button, relgap, button"
+					"$columnSpecs": "labelcompgap, default, labelcompgap, default, glue, button, relgap, button"
 					"$rowSpecs": "pref"
 				} ) {
 					name: "buttonBar"
 					"border": sfield com.jgoodies.forms.factories.Borders BUTTON_BAR_GAP_BORDER
-					add( new FormComponent( "javax.swing.JButton" ) {
-						name: "okButton"
-						"text": "Close"
+					add( new FormComponent( "javax.swing.JComboBox" ) {
+						name: "sckComboBox"
+						"model": new javax.swing.DefaultComboBoxModel {
+							selectedItem: "SCK-300: 6000, 5,  740, 200"
+							addElement( "SCK-300: 6000, 5,  740, 200" )
+							addElement( "SCK-300P: 8000, 0, 960, 500" )
+							addElement( "SCK-300S: 2000, 0, 0,0" )
+							addElement( "SCK-TEST:10000, 5, 740,200" )
+						}
+						"editable": true
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "sckComboBoxActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
-						"gridX": 4
+						"gridX": 2
+						"gridWidth": 4
+					} )
+					add( new FormComponent( "javax.swing.JButton" ) {
+						name: "clearButton"
+						"text": "Clear"
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 6
+						"gridY": 1
+					} )
+					add( new FormComponent( "javax.swing.JButton" ) {
+						name: "exitButton"
+						"text": "Exit"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "exitButtonActionPerformed", true ) )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 8
 					} )
 				}, new FormLayoutConstraints( class java.lang.String ) {
 					"value": "South"
@@ -132,7 +233,7 @@ new FormModel {
 			} )
 		}, new FormLayoutConstraints( null ) {
 			"location": new java.awt.Point( 0, 0 )
-			"size": new java.awt.Dimension( 425, 300 )
+			"size": new java.awt.Dimension( 535, 300 )
 		} )
 	}
 }

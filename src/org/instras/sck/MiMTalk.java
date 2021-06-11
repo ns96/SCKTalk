@@ -12,10 +12,10 @@ import java.util.HashMap;
 /**
  * Created with IntelliJ IDEA.
  * User: nathan
- * Date: 4/14/13
+ * Date: 6/8/2021
  * Time: 9:59 AM
  *
- * Simple class for connecting to ST-V3 with PDC2 firmware
+ * Simple class for connecting SCK-300 units which make use of the MiM or MiM/Nano Every control board
  */
 public class MiMTalk {
     private boolean testMode = false;
@@ -26,16 +26,26 @@ public class MiMTalk {
     private DataInputStream ins;
     private DataOutputStream outs;
 
+    /**
+     * Used to pass messages back to the GUI application
+     *
+     * @param console
+     */
     public void setConsole(JTextArea console) {
         this.console = console;
     }
 
+    /**
+     * Used for testing the API
+     * @param test
+     */
     public void setTestMode(boolean test) {
         this.testMode = test;
     }
 
     /**
      * Method to connect to the serial port
+     *
      * @param portName
      */
     public void connect(String portName) {
@@ -48,11 +58,18 @@ public class MiMTalk {
         outs = new DataOutputStream(serial.getOutputStream());
     }
 
+    /**
+     * Send the command string to MiM board
+     *
+     * @param command
+     * @return
+     */
     public String sendCommand(String command) {
         return sendCommand(command, true);
     }
+
     /**
-     * Method to send a command to the ST-V3
+     * Method to send a command to the MiM board
      *
      * @param command
      * @param wfr wait for response
@@ -77,6 +94,7 @@ public class MiMTalk {
 
     /**
      * Method to read the results after a command has been sent
+     *
      * @return
      */
     public String readResponse() {
@@ -107,7 +125,8 @@ public class MiMTalk {
     }
 
     /**
-     * Method to set the ST-V3 to PC mode
+     * Method to get the version of MiM firmware
+     *
      * @return
      */
     public String getVersion() {
@@ -116,12 +135,12 @@ public class MiMTalk {
 
     /**
      * Function to kick start the motor to prevent it from automatically shutting down
-     * when trying to spin at rpms below 1000 rpms
+     * when trying to spin at speed below 1000 rpm. The SCK-300 version 2 do not need this anymore
+     *
      * @param kickstart The kickstart value
      */
     public void kickStart(int kickstart) {
         try {
-            //sendCommand("SetPWM,200", false);
             sendCommand("SetPWM," + kickstart, false);
             Thread.sleep(50);
             System.out.println("Kick Started ...\n\n");
@@ -131,7 +150,7 @@ public class MiMTalk {
     }
 
     /**
-     * Method to get a performance profile for a motor connected to S1
+     * Method to get a performance profile
      *
      * @param increment
      * @return
@@ -141,13 +160,12 @@ public class MiMTalk {
         ArrayList<Double> xlist = new ArrayList<Double>();
         ArrayList<Double> ylist = new ArrayList<Double>();
 
-        kickStart(200); // 200 for regular 2838, 75 for ball bearing 2838
+        kickStart(75); // 200 for regular 2838, 75 for ball bearing 2838
 
         print("PWM\tRPM");
 
         for(int i = 110; i <= 1000   ; i += increment) {
             sendCommand("SetPWM," + i);
-            //Thread.sleep(5000);
 
             Double rpm = -1.0;
             String response = sendCommand("GetRPM");
@@ -176,7 +194,7 @@ public class MiMTalk {
             print(i + "\t" + irpm);
         }
 
-        // create the double erros
+        // create the double arrays
         Double[] x = new Double[xlist.size()];
         Double[] y = new Double[ylist.size()];
 
@@ -186,20 +204,77 @@ public class MiMTalk {
         return motorProfileMap;
     }
 
-    public void rampToRPM(int desiredRPM, float percentLower) {
+    /**
+     * Method to set the rpm
+     *
+     * @param desiredRPM
+     */
+    public void setRPM(int desiredRPM) {
+        sendCommand("SetRPM," + desiredRPM);
+    }
+
+    /**
+     * Method to move to desired rpm in steps. This prevents the RPM overshoot for the new ball bearing motors
+     *
+     * @param desiredRPM
+     */
+    public void rampToRPM(int desiredRPM) {
         try {
-            int lowerRPM = (int)(desiredRPM - desiredRPM*percentLower);
-            sendCommand("SetRPM," + lowerRPM);
-            Thread.sleep(50);
-            sendCommand("SetRPM," + desiredRPM);
-            System.out.println("Desired RPM: " + desiredRPM + " || Lower RPM" + lowerRPM + "\n");
+            if(desiredRPM <= 500) {
+                sendCommand("SetRPM," + desiredRPM);
+                System.out.println("Setting Desired RPM Directly: " + desiredRPM);
+            } else {
+                int step = 300;
+                for(int i = 500; i <= (desiredRPM + step); i += step) {
+                    int speed = i;
+
+                    if(speed > desiredRPM) {
+                        speed = desiredRPM;
+                    }
+
+                    System.out.println("Setting Speed " + speed + " index: " + i);
+                    sendCommand("SetRPM," + speed);
+                    Thread.sleep(2);
+                }
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
     /**
+     * A convenience method to get the RPM value as an it
+     *
+     * @return
+     */
+    public int getRPM(double roundTo) {
+        String response = sendCommand("GetRPM");
+        int rpm = Integer.parseInt(getResponseValue(response));
+
+        if(roundTo > 0) {
+            rpm = (int) (Math.round(rpm/roundTo) * roundTo);
+        }
+
+        return rpm;
+    }
+
+    /**
+     * Method to turn the BLDC motor on
+     */
+    public void motorOn() {
+        sendCommand("BLDCon");
+    }
+
+    /**
+     * Method to turn the BLDC motor on
+     */
+    public void motorOff() {
+        sendCommand("BLDCoff");
+    }
+
+    /**
      * Method to cycle motor up and down quickly
+     *
      * @param maxRPM
      * @param step
      * @throws InterruptedException
@@ -232,6 +307,7 @@ public class MiMTalk {
 
     /**
      * Method to print to the sout and the JTextArea console if it's not null
+     *
      * @param string
      */
     public void print(String string) {
@@ -241,6 +317,12 @@ public class MiMTalk {
         }
     }
 
+    /**
+     * Extract the value from the response string
+     *
+     * @param response
+     * @return
+     */
     public String getResponseValue(String response) {
         int idx1 = response.indexOf(",") + 1;
         int idx2 = response.indexOf(":");
@@ -267,21 +349,39 @@ public class MiMTalk {
     }
 
     /**
-     * Main method. This is just to test library now
+     * Method to set the motor parameters
+     *
+     * @param startPWM
+     * @param slope
+     * @param intercept
+     */
+    public String setMotorParameters(int startPWM, int slope, int intercept) {
+        String response = sendCommand("SetStartPWM," + startPWM) + " / ";
+        response += sendCommand("SetSlope," + slope) + " / ";
+        response += sendCommand("SetIntercept," + intercept);
+
+        return response;
+    }
+
+    /**
+     * Main method. allows running and testing motors at the command line
+     *
      * @param args
      */
     public static void main(String[] args) throws Exception {
         MiMTalk miMTalk = new MiMTalk();
 
-        miMTalk.connect("COM8");
+        miMTalk.connect("COM3");
 
         String response = miMTalk.getVersion();
+
+        System.out.println("Connection response: " + response);
 
         if(response.contains("MIM")) {
             System.out.println("Connected to MIM\n");
             miMTalk.sendCommand("BLDCon");
 
-            /*
+            /**
             for(int i = 0; i <= 1000; i += 50) {
                 if(i == 0) {
                     System.out.println( "S\tRPM");
@@ -293,8 +393,9 @@ public class MiMTalk {
                 rpm = miMTalk.getResponseValue(rpm);
                 System.out.println( i + "\t" + rpm);
             }
+             */
 
-            /*/
+            /*
             miMTalk.setMotorParameters();
 
             for(int i = 0; i < 50d; i++) {
@@ -302,12 +403,12 @@ public class MiMTalk {
                 miMTalk.cycleMotor(5000, 3000);
                 miMTalk.sendCommand("BLDCoff");
             }
-            //*/
+            */
 
-            /**
+            //**
             ArrayList<LinearRegression> lms = new ArrayList<LinearRegression>();
 
-            for(int i = 0; i < 30; i++) {
+            for(int i = 0; i < 10; i++) {
                 LinearRegression lm = new LinearRegression(miMTalk.getMotorProfile(50));
                 lms.add(lm);
                 miMTalk.print(i + ":: " + lm.toString());
@@ -337,12 +438,13 @@ public class MiMTalk {
             System.out.println("Avg slope: " + slope / size);
             System.out.println("Avg intercept: " + intercept/size);
 
-            **/
+            //**/
 
             // stop the motor just in case we didn't before
-            miMTalk.sendCommand("ESCoff");
+            miMTalk.sendCommand("BLDCoff");
         }
 
+        miMTalk.close();
         System.exit(0);
     }
 

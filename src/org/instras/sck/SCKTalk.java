@@ -7,15 +7,18 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
+ *
  * User: nathan
  * Date: 4/14/13
  * Time: 9:59 AM
  *
- * Simple class for connecting to ST-V3 with PDC2 firmware
+ * Simple class for connecting to ST-V3 with PDC2 firmware.
+ *
+ * 6/10/2021 -- This is class is no longer used as all motor control have been migrated
+ * to the MiM boards
  */
 public class SCKTalk {
     private boolean testMode = false;
