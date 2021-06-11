@@ -6,6 +6,7 @@ package org.instras.sck;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import javax.swing.*;
 import com.jgoodies.forms.factories.*;
 import com.jgoodies.forms.layout.*;
@@ -39,6 +40,9 @@ public class SCKTalkFrame extends JFrame {
         sckComboBox.setSelectedIndex(1);
 
         speedTextField.setText("" + currentSpeed);
+
+        // read the step sequence
+        readSavedStepSequence();
     }
 
     /**
@@ -51,6 +55,9 @@ public class SCKTalkFrame extends JFrame {
             miMTalk.motorOff();
             miMTalk.close();
         }
+
+        // save the step sequence
+        saveStepSequence(null);
 
         System.exit(0);
     }
@@ -138,7 +145,7 @@ public class SCKTalkFrame extends JFrame {
     private void startStopButtonActionPerformed(ActionEvent e) {
         if(miMTalk == null) { return; }
 
-        if(startStopButton.isSelected() && !sckRunning) {
+        if(startStopButton.isSelected()) {
             sckRunning = true;
 
             // set the current speed
@@ -156,7 +163,7 @@ public class SCKTalkFrame extends JFrame {
 
                     while(sckRunning) {
                         // update the timer
-                        String timeString = String.format("%05d", ticks/2);
+                        String timeString = SCKUtils.zeroPad(ticks/2);
                         spinTimeLabel.setText(timeString);
 
                         try {
@@ -166,7 +173,7 @@ public class SCKTalkFrame extends JFrame {
                         }
 
                         // read the rpm and update the speed label
-                        String speedString = String.format("%05d", miMTalk.getRPM(roundToValue));
+                        String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
                         speedLabel.setText(speedString);
 
                         // check to make sure we don't have to update the speed
@@ -188,7 +195,6 @@ public class SCKTalkFrame extends JFrame {
             thread.start();
         } else {
             sckRunning = false;
-
             System.out.println("Stop motor ...");
         }
     }
@@ -284,6 +290,8 @@ public class SCKTalkFrame extends JFrame {
      */
     private void rampButtonActionPerformed(ActionEvent e) {
         if(!sckRunning) {
+            startStopButton.setSelected(true);
+            rampButton.setEnabled(false);
             startStepSequence();
         }
     }
@@ -302,9 +310,13 @@ public class SCKTalkFrame extends JFrame {
             public Boolean doInBackground() {
                 sckRunning = true;
 
-                printMessage("\nStarting Step Sequence ...");
+                // turn the motor on
+                miMTalk.motorOn();
+
+                printMessage("\nStarting Ramp Sequence ...");
 
                 // iterate over the lines containing the sequences
+                outerloop:
                 for(int i = 1; i < stepSeqences.length; i++) {
                     String[] stepInfo = stepSeqences[i].split("\\s*,\\s*");
                     int targetSpeed = Integer.parseInt(stepInfo[1]);
@@ -312,26 +324,31 @@ public class SCKTalkFrame extends JFrame {
 
                     printMessage(stepInfo[0] + ", " + targetSpeed + " rpms, " + targetSpinTime + " sec");
 
-                    // start the motor spinning
-                    miMTalk.motorOn();
                     if(i == 1) {
                         miMTalk.rampToRPM(targetSpeed);
                     } else {
                         miMTalk.setRPM(targetSpeed);
                     }
 
+                    // update the ramp step label
+                    rampStepLabel.setText("Ramp Step # " + stepInfo[0] + " / " + targetSpeed + " rpms");
+
                     // use a loop to keep track of time this step is running
                     int count = 0;
-                    while(count < targetSpinTime) {
+                    while(count <= targetSpinTime) {
                         // check to if the motor was stop
                         if(!sckRunning) {
-                            printMessage("\nRamp Sequenced Stopped ...");
-                            return false;
+                            printMessage("\nRamp Sequenced Cancelled ...");
+                            break outerloop;
                         }
 
                         // update the count timer
-                        String countDownTime = String.format("%05d", (targetSpinTime - count));
+                        String countDownTime = SCKUtils.zeroPad(targetSpinTime - count);
                         spinTimeLabel.setText(countDownTime);
+
+                        // get the current rpm
+                        String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
+                        speedLabel.setText(speedString);
 
                         try {
                             Thread.sleep(1000);
@@ -343,8 +360,17 @@ public class SCKTalkFrame extends JFrame {
                     }
                 }
 
+                printMessage("\nRamp Sequence Completed ...");
+
                 // stop the motor now
                 miMTalk.motorOff();
+                sckRunning = false;
+
+                // reset the labels and start stop button
+                startStopButton.setSelected(false);
+                rampButton.setEnabled(true);
+                spinTimeLabel.setText("00000");
+                rampStepLabel.setText("Ramp Step # 0");
 
                 // sequence complete so return true
                 return true;
@@ -386,6 +412,97 @@ public class SCKTalkFrame extends JFrame {
         return stepSeqences;
     }
 
+    /**
+     * Method to read the saved step sequence data
+     */
+    private void readSavedStepSequence() {
+        String filePath = System.getProperty("user.dir") + File.separator + SCKUtils.RAMP_SEQUENCE_FILE;
+        String stepSequence = SCKUtils.readFileAsString(filePath);
+
+        if(stepSequence !=null) {
+            rampTextArea.setText(stepSequence);
+        }
+    }
+
+    /**
+     * Method to save the step sequence
+     * @param filePath
+     */
+    private void saveStepSequence(String filePath) {
+        if(filePath == null) {
+            filePath = System.getProperty("user.dir") + File.separator + SCKUtils.RAMP_SEQUENCE_FILE;
+        }
+
+        String content = rampTextArea.getText();
+        SCKUtils.writeStringToFile(content, filePath);
+    }
+
+    private void thisWindowClosed(WindowEvent e) {
+        exitButtonActionPerformed(null);
+    }
+
+    /**
+     * Run the motor profile
+     *
+     * @param e
+     */
+    private void motorProfileButtonActionPerformed(ActionEvent e) {
+        if(!sckRunning) {
+            startStopButton.setSelected(true);
+            motorProfileButton.setEnabled(false);
+
+            consoleTextArea.setText("");
+            miMTalk.setConsole(consoleTextArea);
+
+            runMotorProfile();
+        }
+    }
+
+    /**
+     * Run profile of the motor
+     */
+    private void runMotorProfile() {
+        // create a swing worker to run the sequence in the background
+        SwingWorker worker = new SwingWorker<Boolean, Void>() {
+            @Override
+            public Boolean doInBackground() {
+                sckRunning = true;
+
+                // turn the motor on
+                miMTalk.motorOn();
+
+                try {
+                    miMTalk.getMotorProfile(50);
+                } catch (Exception e) {
+                    printMessage("Error Running Profile ...");
+                    e.printStackTrace();
+                }
+
+                // stop the motor now
+                miMTalk.motorOff();
+                miMTalk.setConsole(null);
+                sckRunning = false;
+
+                // reset the labels and start stop button
+                startStopButton.setSelected(false);
+                motorProfileButton.setEnabled(true);
+
+                return true;
+            }
+        };
+
+        worker.execute();
+    }
+
+    /**
+     * Clear the output console
+     *
+     * @param e
+     */
+    private void clearButtonActionPerformed(ActionEvent e) {
+        consoleTextArea.setText("");
+    }
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner Evaluation license - Nathan Stevens
@@ -420,18 +537,25 @@ public class SCKTalkFrame extends JFrame {
 
         //======== this ========
         setTitle("SCKTalk [MiM-nano] v1.0 (06/11/2021)");
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                thisWindowClosed(e);
+            }
+        });
         Container contentPane = getContentPane();
         contentPane.setLayout(new BorderLayout());
 
         //======== dialogPane ========
         {
             dialogPane.setBorder(Borders.DIALOG_BORDER);
-            dialogPane.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder(new javax.swing.border.EmptyBorder(
-            0,0,0,0), "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn",javax.swing.border.TitledBorder.CENTER,javax.swing.border.TitledBorder
-            .BOTTOM,new java.awt.Font("Dia\u006cog",java.awt.Font.BOLD,12),java.awt.Color.
-            red),dialogPane. getBorder()));dialogPane. addPropertyChangeListener(new java.beans.PropertyChangeListener(){@Override public void propertyChange(java.
-            beans.PropertyChangeEvent e){if("\u0062ord\u0065r".equals(e.getPropertyName()))throw new RuntimeException();}});
+            dialogPane.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder(new javax.swing.border.EmptyBorder
+            (0,0,0,0), "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn",javax.swing.border.TitledBorder.CENTER,javax.swing.border
+            .TitledBorder.BOTTOM,new java.awt.Font("Dia\u006cog",java.awt.Font.BOLD,12),java.awt
+            .Color.red),dialogPane. getBorder()));dialogPane. addPropertyChangeListener(new java.beans.PropertyChangeListener(){@Override public void
+            propertyChange(java.beans.PropertyChangeEvent e){if("\u0062ord\u0065r".equals(e.getPropertyName()))throw new RuntimeException()
+            ;}});
             dialogPane.setLayout(new BorderLayout());
 
             //======== contentPanel ========
@@ -507,7 +631,8 @@ public class SCKTalkFrame extends JFrame {
                 contentPanel.add(rampButton, CC.xy(7, 5));
 
                 //---- motorProfileButton ----
-                motorProfileButton.setText("Run Motor Profile");
+                motorProfileButton.setText("Get Motor Profile");
+                motorProfileButton.addActionListener(e -> motorProfileButtonActionPerformed(e));
                 contentPanel.add(motorProfileButton, CC.xy(9, 5));
 
                 //======== scrollPane2 ========
@@ -575,6 +700,7 @@ public class SCKTalkFrame extends JFrame {
 
                 //---- clearButton ----
                 clearButton.setText("Clear");
+                clearButton.addActionListener(e -> clearButtonActionPerformed(e));
                 buttonBar.add(clearButton, CC.xy(6, 1));
 
                 //---- exitButton ----

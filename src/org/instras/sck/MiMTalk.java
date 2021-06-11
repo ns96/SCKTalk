@@ -177,7 +177,7 @@ public class MiMTalk {
             try {
                 rpm = new Double(response);
             } catch(NumberFormatException nfe) {
-                System.out.println("Invalid RPM data: " + response);
+                print("Invalid RPM data: " + response);
             }
 
             xlist.add(new Double(i));
@@ -306,12 +306,59 @@ public class MiMTalk {
     }
 
     /**
+     * Method to do a linear fit on motor speed profile to get the slope, and intercept
+     *
+     * @param avg
+     * @return
+     */
+    public void fitMotorProfile(int avg) throws Exception {
+        sendCommand("BLDCon");
+
+        ArrayList<LinearRegression> lms = new ArrayList<LinearRegression>();
+
+        for(int i = 0; i < 10; i++) {
+            LinearRegression lm = new LinearRegression(getMotorProfile(50));
+            lms.add(lm);
+            print(i + ":: " + lm.toString());
+
+            // take a break to allow motor to cool off a bit
+            sendCommand("BLDCoff");
+            Thread.sleep(20000);
+            sendCommand("BLDCon");
+            Thread.sleep(5000);
+        }
+
+        print("\n\n");
+
+        int size = lms.size();
+        double slope= 0;
+        double intercept = 0;
+
+        for(LinearRegression lm: lms) {
+            if(!Double.isNaN(lm.slope())) {
+                slope += lm.slope();
+                intercept += lm.intercept();
+                print(lm.toString());
+            } else {
+                size--;
+            }
+        }
+
+        print("Avg slope: " + slope / size);
+        print("Avg intercept: " + intercept/size);
+
+        // stop the motor just in case we didn't before
+        sendCommand("BLDCoff");
+    }
+
+    /**
      * Method to print to the sout and the JTextArea console if it's not null
      *
      * @param string
      */
     public void print(String string) {
         System.out.println(string);
+
         if(console != null) {
             console.append(string + "\n");
         }
@@ -371,7 +418,7 @@ public class MiMTalk {
     public static void main(String[] args) throws Exception {
         MiMTalk miMTalk = new MiMTalk();
 
-        miMTalk.connect("COM3");
+        miMTalk.connect("COM4");
 
         String response = miMTalk.getVersion();
 
@@ -404,41 +451,6 @@ public class MiMTalk {
                 miMTalk.sendCommand("BLDCoff");
             }
             */
-
-            //**
-            ArrayList<LinearRegression> lms = new ArrayList<LinearRegression>();
-
-            for(int i = 0; i < 10; i++) {
-                LinearRegression lm = new LinearRegression(miMTalk.getMotorProfile(50));
-                lms.add(lm);
-                miMTalk.print(i + ":: " + lm.toString());
-
-                miMTalk.sendCommand("BLDCoff");
-                Thread.sleep(20000);
-                miMTalk.sendCommand("BLDCon");
-                Thread.sleep(5000);
-            }
-
-            miMTalk.print("\n\n");
-
-            int size = lms.size();
-            double slope= 0;
-            double intercept = 0;
-
-            for(LinearRegression lm: lms) {
-                if(!Double.isNaN(lm.slope())) {
-                    slope += lm.slope();
-                    intercept += lm.intercept();
-                    miMTalk.print(lm.toString());
-                } else {
-                    size--;
-                }
-            }
-
-            System.out.println("Avg slope: " + slope / size);
-            System.out.println("Avg intercept: " + intercept/size);
-
-            //**/
 
             // stop the motor just in case we didn't before
             miMTalk.sendCommand("BLDCoff");

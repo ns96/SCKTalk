@@ -6,7 +6,8 @@ new FormModel {
 		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 			name: "this"
 			"title": "SCKTalk [MiM-nano] v1.0 (06/11/2021)"
-			"defaultCloseOperation": 3
+			"defaultCloseOperation": 2
+			addEvent( new FormEvent( "java.awt.event.WindowListener", "windowClosed", "thisWindowClosed", true ) )
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 				name: "dialogPane"
 				"border": sfield com.jgoodies.forms.factories.Borders DIALOG_BORDER
@@ -121,7 +122,8 @@ new FormModel {
 					} )
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "motorProfileButton"
-						"text": "Run Motor Profile"
+						"text": "Get Motor Profile"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "motorProfileButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 9
 						"gridY": 5
@@ -214,6 +216,7 @@ new FormModel {
 					add( new FormComponent( "javax.swing.JButton" ) {
 						name: "clearButton"
 						"text": "Clear"
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "clearButtonActionPerformed", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
 						"gridX": 6
 						"gridY": 1
