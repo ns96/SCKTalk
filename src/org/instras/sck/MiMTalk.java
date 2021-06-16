@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static java.lang.Math.abs;
+
 /**
  * Created with IntelliJ IDEA.
  * User: nathan
@@ -18,13 +20,41 @@ import java.util.HashMap;
  * Simple class for connecting SCK-300 units which make use of the MiM or MiM/Nano Every control board
  */
 public class MiMTalk {
+    enum MotorType {
+        BLDC,
+        STEPPER
+    }
+
     private boolean testMode = false;
+
     public int minMotorRPM = 0;
+
     public int maxMotorRPM = 0;
+
+    public int excitation = 4;
+
+    public int stepsPerRev = 96;
+
+    public int maxFrequency = 32000; // maximum pwm frequency aka clocks to drive stepper motor
+
     private JTextArea console;
+
     private NRSerialPort serial;
+
     private DataInputStream ins;
+
     private DataOutputStream outs;
+
+    public MotorType currentMotor = MotorType.BLDC;
+
+    /**
+     * Set the motor type
+     *
+     * @param motorType
+     */
+    public void setMotorType(MotorType motorType) {
+        currentMotor = motorType;
+    }
 
     /**
      * Used to pass messages back to the GUI application
@@ -75,7 +105,7 @@ public class MiMTalk {
      * @param wfr wait for response
      * @return
      */
-    public String sendCommand(String command, boolean wfr) {
+    public synchronized String sendCommand(String command, boolean wfr) {
         if(testMode) return "OK";
 
         try {
@@ -243,13 +273,67 @@ public class MiMTalk {
     }
 
     /**
+     * Method to move to desired stepper rpm in steps. This prevents the stepper motor from
+     * miss stepping up to a certain point
+     *
+     * @param desiredRPM
+     */
+    public void rampStepperToRPM(int currentRPM, int desiredRPM) {
+        try {
+            // power on motor coils and set the steps to move to big number
+            if(currentRPM == 0) {
+                sendCommand("SleepOff");
+                sendCommand("SetFreq,1");
+                sendCommand("MoveUp,10000000"); // this is how we get the stepper motor to spin clockwise continuosly
+            }
+
+            int step = 50; // move in steps of 50 rpms
+            int frequency;
+            int rpmDiff = desiredRPM - currentRPM;
+
+            // the the desired rpm is less than the step size or we moving down in speed go
+            // to speed directly without ramping up
+            if(desiredRPM < step || rpmDiff < 0) {
+                frequency = convertRPMToFrequency(desiredRPM);
+                sendCommand("SetFreq," + frequency);
+            } else {
+                for (int i = (currentRPM + step); i <= (desiredRPM + step); i += step) {
+                    int speed = i;
+
+                    if(speed > desiredRPM) {
+                        speed = desiredRPM;
+                    }
+
+                    frequency = convertRPMToFrequency(speed);
+                    sendCommand("SetFreq," + frequency);
+
+                    System.out.println("Set Stepper Speed " + speed + ", Frequency: " + frequency);
+                    Thread.sleep(5);
+                }
+            }
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * A convenience method to get the RPM value as an it
      *
      * @return
      */
     public int getRPM(double roundTo) {
-        String response = sendCommand("GetRPM");
-        int rpm = Integer.parseInt(getResponseValue(response));
+        int rpm = -1;
+
+        if(currentMotor == MotorType.BLDC) {
+            String response = sendCommand("GetRPM");
+            rpm = Integer.parseInt(getResponseValue(response));
+        } else {
+            // stepper motor. Just get current frequency and convert to RPM
+            String response = sendCommand("GetFreq");
+            int frequency = Integer.parseInt(getResponseValue(response));
+            rpm = convertFrequencyToRPM(frequency);
+        }
 
         if(roundTo > 0) {
             rpm = (int) (Math.round(rpm/roundTo) * roundTo);
@@ -259,17 +343,51 @@ public class MiMTalk {
     }
 
     /**
+     * Method to convert stepper motor frequency to rpm by just doing the calculation
+     * assuming a linear response to the stepper motor
+     * @param frequency
+     * @return
+     */
+    private int convertFrequencyToRPM(int frequency) {
+        int rpm = (frequency * 60/excitation)/stepsPerRev;
+
+        return rpm;
+    }
+
+    /**
+     * Convert the rpm to desired frequency to stepper motor
+     *
+     * @param rpm
+     * @return
+     */
+    private int convertRPMToFrequency(int rpm) {
+        int frequency = (rpm * stepsPerRev * excitation) / 60;
+        return frequency;
+    }
+
+    /**
      * Method to turn the BLDC motor on
      */
     public void motorOn() {
-        sendCommand("BLDCon");
+        if(currentMotor == MotorType.BLDC) {
+            sendCommand("BLDCon");
+        } else {
+            // must be stepper motor
+            sendCommand("STEPon");
+            sendCommand("SleepOn");
+        }
     }
 
     /**
      * Method to turn the BLDC motor on
      */
     public void motorOff() {
-        sendCommand("BLDCoff");
+        if(currentMotor == MotorType.BLDC) {
+            sendCommand("BLDCoff");
+        } else {
+            // must be stepper motor
+            sendCommand("STEPoff");
+        }
     }
 
     /**
@@ -408,6 +526,21 @@ public class MiMTalk {
         response += sendCommand("SetIntercept," + intercept);
 
         return response;
+    }
+
+    /**
+     * Set the parameters for the stepper motors
+     *
+     * @param excitation This is the microsteping for the motor. For SCK-300S its fixed at 4
+     * @param stepsPerRev The steps per revolution of stepper motor, 96 for SCK-300S
+     * @return
+     */
+    public String setStepperParameters(int excitation, int stepsPerRev, int maxMotorRPM) {
+        this.excitation  = excitation;
+        this.stepsPerRev = stepsPerRev;
+        this.maxMotorRPM = maxMotorRPM;
+
+        return "OK";
     }
 
     /**

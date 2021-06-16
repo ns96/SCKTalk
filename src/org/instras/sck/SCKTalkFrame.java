@@ -28,6 +28,8 @@ public class SCKTalkFrame extends JFrame {
 
     private double roundToValue = 25.0; // used for rounding the rpm
 
+    private String sckType = "SCK-300P";
+
     public SCKTalkFrame() {
         initComponents();
 
@@ -108,8 +110,16 @@ public class SCKTalkFrame extends JFrame {
             int slope = Integer.parseInt(sa2[2].trim());
             int intercept = Integer.parseInt(sa2[3].trim());
 
-            String response = miMTalk.setMotorParameters(startPWM, slope, intercept);
-            printMessage("Setting SCK parameters: " + response);
+            // see if to set the motor type based on the choice of user
+            sckType = sa1[0].trim();
+            if(sckType.equals("SCK-300S")) {
+                miMTalk.setMotorType(MiMTalk.MotorType.STEPPER);
+                String response = miMTalk.setStepperParameters(startPWM, slope, maxSpeed);
+                printMessage("Setting SCK Stepper parameters: " + response);
+            } else {
+                String response = miMTalk.setMotorParameters(startPWM, slope, intercept);
+                printMessage("Setting SCK BLDC parameters: " + response);
+            }
         } catch(NumberFormatException ex) {
             printMessage("Error setting SCK parameters");
         }
@@ -151,26 +161,37 @@ public class SCKTalkFrame extends JFrame {
             // set the current speed
             speedTextFieldActionPerformed(null);
 
-            // send command to go to the desired
+            // now send command to go to the desired speed
             miMTalk.motorOn();
-            miMTalk.rampToRPM(currentSpeed);
 
-            // start the thre
-            Thread thread = new Thread() {
+            // run this in separate thread to allow the gui to update
+            Thread motorThread = new Thread() {
+                public void run() {
+                    if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                        miMTalk.rampToRPM(currentSpeed);
+                    } else {
+                        miMTalk.rampStepperToRPM(0, currentSpeed);
+                    }
+                }
+            };
+            motorThread.start();
+
+            // start the thread to update the time and check for new speed settings
+            Thread timerThread = new Thread() {
                 public void run() {
                     int ticks = 0;
                     int oldSpeed = currentSpeed;
 
                     while(sckRunning) {
-                        // update the timer
-                        String timeString = SCKUtils.zeroPad(ticks/2);
-                        spinTimeLabel.setText(timeString);
-
                         try {
                             sleep(500);
                         } catch (InterruptedException ex) {
                             break;
                         }
+
+                        // update the timer
+                        String timeString = SCKUtils.zeroPad(ticks/2);
+                        spinTimeLabel.setText(timeString);
 
                         // read the rpm and update the speed label
                         String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
@@ -178,7 +199,12 @@ public class SCKTalkFrame extends JFrame {
 
                         // check to make sure we don't have to update the speed
                         if(currentSpeed != oldSpeed) {
-                            miMTalk.setRPM(currentSpeed);
+                            if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                                miMTalk.setRPM(currentSpeed);
+                            } else {
+                                miMTalk.rampStepperToRPM(oldSpeed, currentSpeed);
+                            }
+
                             oldSpeed = currentSpeed;
                         }
 
@@ -192,7 +218,7 @@ public class SCKTalkFrame extends JFrame {
                 }
             };
 
-            thread.start();
+            timerThread.start();
         } else {
             sckRunning = false;
             System.out.println("Stop motor ...");
@@ -536,7 +562,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano] v1.0 (06/11/2021)");
+        setTitle("SCKTalk [MiM-nano] v1.0 (06/16/2021)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -550,12 +576,12 @@ public class SCKTalkFrame extends JFrame {
         //======== dialogPane ========
         {
             dialogPane.setBorder(Borders.DIALOG_BORDER);
-            dialogPane.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder(new javax.swing.border.EmptyBorder
-            (0,0,0,0), "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn",javax.swing.border.TitledBorder.CENTER,javax.swing.border
-            .TitledBorder.BOTTOM,new java.awt.Font("Dia\u006cog",java.awt.Font.BOLD,12),java.awt
-            .Color.red),dialogPane. getBorder()));dialogPane. addPropertyChangeListener(new java.beans.PropertyChangeListener(){@Override public void
-            propertyChange(java.beans.PropertyChangeEvent e){if("\u0062ord\u0065r".equals(e.getPropertyName()))throw new RuntimeException()
-            ;}});
+            dialogPane.setBorder (new javax. swing. border. CompoundBorder( new javax .swing .border .TitledBorder (new javax. swing. border
+            . EmptyBorder( 0, 0, 0, 0) , "JF\u006frmDesi\u0067ner Ev\u0061luatio\u006e", javax. swing. border. TitledBorder. CENTER, javax
+            . swing. border. TitledBorder. BOTTOM, new java .awt .Font ("Dialo\u0067" ,java .awt .Font .BOLD ,
+            12 ), java. awt. Color. red) ,dialogPane. getBorder( )) ); dialogPane. addPropertyChangeListener (new java. beans
+            . PropertyChangeListener( ){ @Override public void propertyChange (java .beans .PropertyChangeEvent e) {if ("borde\u0072" .equals (e .
+            getPropertyName () )) throw new RuntimeException( ); }} );
             dialogPane.setLayout(new BorderLayout());
 
             //======== contentPanel ========
@@ -691,8 +717,8 @@ public class SCKTalkFrame extends JFrame {
                 sckComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
                     "SCK-300: 6000, 5,  740, 200",
                     "SCK-300P: 8000, 0, 960, 500",
-                    "SCK-300S: 2000, 0, 0,0",
-                    "SCK-TEST:10000, 5, 740,200"
+                    "SCK-300S: 2000, 4, 96, 0",
+                    "SCK-TEST:10000, 5, 740, 200"
                 }));
                 sckComboBox.setEditable(true);
                 sckComboBox.addActionListener(e -> sckComboBoxActionPerformed(e));
