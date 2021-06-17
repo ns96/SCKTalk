@@ -164,7 +164,7 @@ public class SCKTalkFrame extends JFrame {
             // now send command to go to the desired speed
             miMTalk.motorOn();
 
-            // run this in separate thread to allow the gui to update
+            /* run this in separate thread to allow the gui to update
             Thread motorThread = new Thread() {
                 public void run() {
                     if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
@@ -174,7 +174,14 @@ public class SCKTalkFrame extends JFrame {
                     }
                 }
             };
-            motorThread.start();
+            motorThread.start();*/
+
+            // ramp to the motor speed
+            if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                miMTalk.rampToRPM(currentSpeed);
+            } else {
+                miMTalk.rampStepperToRPM(0, currentSpeed);
+            }
 
             // start the thread to update the time and check for new speed settings
             Thread timerThread = new Thread() {
@@ -562,7 +569,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano] v1.0 (06/16/2021)");
+        setTitle("SCKTalk [MiM-nano] v1.0 (06/17/2021)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -576,12 +583,13 @@ public class SCKTalkFrame extends JFrame {
         //======== dialogPane ========
         {
             dialogPane.setBorder(Borders.DIALOG_BORDER);
-            dialogPane.setBorder (new javax. swing. border. CompoundBorder( new javax .swing .border .TitledBorder (new javax. swing. border
-            . EmptyBorder( 0, 0, 0, 0) , "JF\u006frmDesi\u0067ner Ev\u0061luatio\u006e", javax. swing. border. TitledBorder. CENTER, javax
-            . swing. border. TitledBorder. BOTTOM, new java .awt .Font ("Dialo\u0067" ,java .awt .Font .BOLD ,
-            12 ), java. awt. Color. red) ,dialogPane. getBorder( )) ); dialogPane. addPropertyChangeListener (new java. beans
-            . PropertyChangeListener( ){ @Override public void propertyChange (java .beans .PropertyChangeEvent e) {if ("borde\u0072" .equals (e .
-            getPropertyName () )) throw new RuntimeException( ); }} );
+            dialogPane.setBorder (new javax. swing. border. CompoundBorder( new javax .swing .border .TitledBorder (new javax. swing
+            . border. EmptyBorder( 0, 0, 0, 0) , "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn", javax. swing. border. TitledBorder
+            . CENTER, javax. swing. border. TitledBorder. BOTTOM, new java .awt .Font ("Dia\u006cog" ,java .
+            awt .Font .BOLD ,12 ), java. awt. Color. red) ,dialogPane. getBorder( )) )
+            ; dialogPane. addPropertyChangeListener (new java. beans. PropertyChangeListener( ){ @Override public void propertyChange (java .beans .PropertyChangeEvent e
+            ) {if ("\u0062ord\u0065r" .equals (e .getPropertyName () )) throw new RuntimeException( ); }} )
+            ;
             dialogPane.setLayout(new BorderLayout());
 
             //======== contentPanel ========

@@ -280,14 +280,16 @@ public class MiMTalk {
      */
     public void rampStepperToRPM(int currentRPM, int desiredRPM) {
         try {
-            // power on motor coils and set the steps to move to big number
+            // power on motor and set the steps to move to big number
             if(currentRPM == 0) {
                 sendCommand("SleepOff");
                 sendCommand("SetFreq,1");
-                sendCommand("MoveUp,10000000"); // this is how we get the stepper motor to spin clockwise continuosly
+
+                // this is how we get the stepper motor to spin clockwise continuously
+                sendCommand("MoveUp,10000000");
             }
 
-            int step = 50; // move in steps of 50 rpms
+            int step = 100; // move in steps of 100 rpms
             int frequency;
             int rpmDiff = desiredRPM - currentRPM;
 
@@ -308,7 +310,7 @@ public class MiMTalk {
                     sendCommand("SetFreq," + frequency);
 
                     System.out.println("Set Stepper Speed " + speed + ", Frequency: " + frequency);
-                    Thread.sleep(5);
+                    Thread.sleep(2);
                 }
             }
 
