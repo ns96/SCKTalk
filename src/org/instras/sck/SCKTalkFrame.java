@@ -346,7 +346,12 @@ public class SCKTalkFrame extends JFrame {
                 // turn the motor on
                 miMTalk.motorOn();
 
-                printMessage("\nStarting Ramp Sequence ...");
+                // clear the console
+                consoleTextArea.setText("");
+
+                printMessage("Starting Ramp Sequence ...");
+
+                int currentSpeed = 0; // keep track of the current speed to the stepper motor
 
                 // iterate over the lines containing the sequences
                 outerloop:
@@ -357,10 +362,16 @@ public class SCKTalkFrame extends JFrame {
 
                     printMessage(stepInfo[0] + ", " + targetSpeed + " rpms, " + targetSpinTime + " sec");
 
-                    if(i == 1) {
-                        miMTalk.rampToRPM(targetSpeed);
+                    if(miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                        if (i == 1) {
+                            miMTalk.rampToRPM(targetSpeed);
+                        } else {
+                            miMTalk.setRPM(targetSpeed);
+                        }
                     } else {
-                        miMTalk.setRPM(targetSpeed);
+                        // we using the stepper driver
+                        miMTalk.rampStepperToRPM(currentSpeed, targetSpeed);
+                        currentSpeed = targetSpeed;
                     }
 
                     // update the ramp step label
@@ -480,7 +491,7 @@ public class SCKTalkFrame extends JFrame {
      * @param e
      */
     private void motorProfileButtonActionPerformed(ActionEvent e) {
-        if(!sckRunning) {
+        if(!sckRunning && miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
             startStopButton.setSelected(true);
             motorProfileButton.setEnabled(false);
 
@@ -488,6 +499,8 @@ public class SCKTalkFrame extends JFrame {
             miMTalk.setConsole(consoleTextArea);
 
             runMotorProfile();
+        } else {
+            consoleTextArea.setText("Not supported for SCK-300S");
         }
     }
 
@@ -538,7 +551,7 @@ public class SCKTalkFrame extends JFrame {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
-        // Generated using JFormDesigner Evaluation license - Nathan Stevens
+        // Generated using JFormDesigner non-commercial license
         dialogPane = new JPanel();
         contentPanel = new JPanel();
         connectButton = new JButton();
@@ -569,7 +582,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano] v1.0 (06/17/2021)");
+        setTitle("SCKTalk [MiM-nano] v1.0.0 (06/18/2021)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -583,13 +596,6 @@ public class SCKTalkFrame extends JFrame {
         //======== dialogPane ========
         {
             dialogPane.setBorder(Borders.DIALOG_BORDER);
-            dialogPane.setBorder (new javax. swing. border. CompoundBorder( new javax .swing .border .TitledBorder (new javax. swing
-            . border. EmptyBorder( 0, 0, 0, 0) , "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn", javax. swing. border. TitledBorder
-            . CENTER, javax. swing. border. TitledBorder. BOTTOM, new java .awt .Font ("Dia\u006cog" ,java .
-            awt .Font .BOLD ,12 ), java. awt. Color. red) ,dialogPane. getBorder( )) )
-            ; dialogPane. addPropertyChangeListener (new java. beans. PropertyChangeListener( ){ @Override public void propertyChange (java .beans .PropertyChangeEvent e
-            ) {if ("\u0062ord\u0065r" .equals (e .getPropertyName () )) throw new RuntimeException( ); }} )
-            ;
             dialogPane.setLayout(new BorderLayout());
 
             //======== contentPanel ========
@@ -751,7 +757,7 @@ public class SCKTalkFrame extends JFrame {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables
-    // Generated using JFormDesigner Evaluation license - Nathan Stevens
+    // Generated using JFormDesigner non-commercial license
     private JPanel dialogPane;
     private JPanel contentPanel;
     private JButton connectButton;

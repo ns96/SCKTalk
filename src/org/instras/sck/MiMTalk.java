@@ -131,8 +131,8 @@ public class MiMTalk {
         if(testMode) return "TESTMODE";
 
         try {
-            // wait 0.200 second so data can arrive from MiM
-            Thread.sleep(200);
+            // wait 0.100 second so data can arrive from MiM
+            Thread.sleep(100);
 
             StringBuilder sb = new StringBuilder(); //ins.readUTF();
             byte[] buffer = new byte[128];
@@ -282,8 +282,8 @@ public class MiMTalk {
         try {
             // power on motor and set the steps to move to big number
             if(currentRPM == 0) {
+                //sendCommand("SetFreq,1");
                 sendCommand("SleepOff");
-                sendCommand("SetFreq,1");
 
                 // this is how we get the stepper motor to spin clockwise continuously
                 sendCommand("MoveUp,10000000");
@@ -295,22 +295,39 @@ public class MiMTalk {
 
             // the the desired rpm is less than the step size or we moving down in speed go
             // to speed directly without ramping up
-            if(desiredRPM < step || rpmDiff < 0) {
+            if(desiredRPM < step) {
                 frequency = convertRPMToFrequency(desiredRPM);
                 sendCommand("SetFreq," + frequency);
             } else {
-                for (int i = (currentRPM + step); i <= (desiredRPM + step); i += step) {
-                    int speed = i;
+                if(rpmDiff > 0) { // moving to higher speed
+                    for (int i = (currentRPM + step); i <= (desiredRPM + step); i += step) {
+                        int speed = i;
 
-                    if(speed > desiredRPM) {
-                        speed = desiredRPM;
+                        if (speed > desiredRPM) {
+                            speed = desiredRPM;
+                        }
+
+                        frequency = convertRPMToFrequency(speed);
+                        sendCommand("SetFreq," + frequency);
+
+                        System.out.println("Set Stepper Speed " + speed + ", Frequency: " + frequency);
+                        Thread.sleep(2);
                     }
+                } else {
+                    // moving to lower speed
+                    for (int i = (currentRPM - step); i >= (desiredRPM - step); i -= step) {
+                        int speed = i;
 
-                    frequency = convertRPMToFrequency(speed);
-                    sendCommand("SetFreq," + frequency);
+                        if (speed < desiredRPM) {
+                            speed = desiredRPM;
+                        }
 
-                    System.out.println("Set Stepper Speed " + speed + ", Frequency: " + frequency);
-                    Thread.sleep(2);
+                        frequency = convertRPMToFrequency(speed);
+                        sendCommand("SetFreq," + frequency);
+
+                        System.out.println("Set Stepper Speed " + speed + ", Frequency: " + frequency);
+                        Thread.sleep(2);
+                    }
                 }
             }
 
