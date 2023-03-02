@@ -164,7 +164,7 @@ public class MiMTalk {
     }
 
     /**
-     * Function to kick start the motor to prevent it from automatically shutting down
+     * Function to kickstart the motor to prevent it from automatically shutting down
      * when trying to spin at speed below 1000 rpm. The SCK-300 version 2 do not need this anymore
      *
      * @param kickstart The kickstart value
