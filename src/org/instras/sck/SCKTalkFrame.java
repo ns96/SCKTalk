@@ -18,6 +18,8 @@ import gnu.io.NRSerialPort;
 public class SCKTalkFrame extends JFrame {
     private MiMTalk miMTalk = null; // used to connect to the SCK unit through the serial port
 
+    private TicTalk ticTalk = null; // used to connect to the Tic board based SCK-300S
+
     private int maxSpeed = 8000; // the max speed
 
     private int minSpeed = 0; // the minimum speed
@@ -58,6 +60,11 @@ public class SCKTalkFrame extends JFrame {
             miMTalk.close();
         }
 
+        if(ticTalk != null) {
+            ticTalk.motorOff();
+            ticTalk.close();
+        }
+
         // save the step sequence
         saveStepSequence(null);
 
@@ -70,28 +77,62 @@ public class SCKTalkFrame extends JFrame {
 
         try {
             consoleTextArea.setText("Connecting to SCK ...\n");
-
-            miMTalk = new MiMTalk();
-            miMTalk.connect(portName);
-
-            String response = miMTalk.getVersion();
-
-            printMessage("SCK Response: " + response);
-
-            if (response.contains("MIM")) {
-                printMessage("Connected to SCK unit ...\n");
-                sendSCKParameters();
-                connectButton.setBackground(Color.ORANGE);
-                connectButton.setEnabled(false);
+            if(mimModelRadioButton.isSelected()) {
+                connectToMiM(portName);
             } else {
-                printMessage("Error Connecting to MIM ...\n");
-                miMTalk.close();
-                miMTalk = null;
+
             }
         } catch(Exception ex) {
             printMessage("\n\nCOMM PORT ERROR -- " + portName);
             miMTalk = null;
+
             ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Connect to the MiM board for SCK-300/300P
+     */
+    private void connectToMiM(String portName) {
+        miMTalk = new MiMTalk();
+        miMTalk.connect(portName);
+
+        String response = miMTalk.getVersion();
+
+        printMessage("SCK Response: " + response);
+
+        if (response.contains("MIM")) {
+            printMessage("Connected to SCK unit ...\n");
+            sendSCKParameters();
+            connectButton.setBackground(Color.ORANGE);
+            connectButton.setEnabled(false);
+        } else {
+            printMessage("Error Connecting to MIM ...\n");
+            miMTalk.close();
+            miMTalk = null;
+        }
+    }
+
+    /**
+     * Connect to the MiM board for SCK-300/300P
+     */
+    private void connectToTic(String portName) {
+        ticTalk = new TicTalk();
+        ticTalk.connect(portName);
+
+        String response = ticTalk.getVersion();
+
+        printMessage("SCK Response: " + response);
+
+        if (response.contains("Tic")) {
+            printMessage("Connected to SCK unit ...\n");
+            sendSCKParameters();
+            connectButton.setBackground(Color.ORANGE);
+            connectButton.setEnabled(false);
+        } else {
+            printMessage("Error Connecting to Tic ...\n");
+            ticTalk.close();
+            ticTalk = null;
         }
     }
 
@@ -113,8 +154,8 @@ public class SCKTalkFrame extends JFrame {
             // see if to set the motor type based on the choice of user
             sckType = sa1[0].trim();
             if(sckType.equals("SCK-300S")) {
-                miMTalk.setMotorType(MiMTalk.MotorType.STEPPER);
-                String response = miMTalk.setStepperParameters(startPWM, slope, maxSpeed);
+                //miMTalk.setMotorType(MiMTalk.MotorType.STEPPER);
+                String response = ticTalk.setStepperParameters(startPWM, slope, maxSpeed);
                 printMessage("Setting SCK Stepper parameters: " + response);
             } else {
                 String response = miMTalk.setMotorParameters(startPWM, slope, intercept);
@@ -558,6 +599,9 @@ public class SCKTalkFrame extends JFrame {
         label1 = new JLabel();
         portComboBox = new JComboBox<>();
         closePortButton = new JButton();
+        label7 = new JLabel();
+        mimModelRadioButton = new JRadioButton();
+        ticModelRadioButton = new JRadioButton();
         startStopButton = new JToggleButton();
         upButton = new JButton();
         downButton = new JButton();
@@ -565,6 +609,7 @@ public class SCKTalkFrame extends JFrame {
         incrementTextField = new JTextField();
         label5 = new JLabel();
         speedTextField = new JTextField();
+        accTextField = new JTextField();
         rampButton = new JButton();
         motorProfileButton = new JButton();
         scrollPane2 = new JScrollPane();
@@ -582,7 +627,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano] v1.0.0 (06/18/2021)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.1.0 (01/19/2022)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -601,8 +646,8 @@ public class SCKTalkFrame extends JFrame {
             //======== contentPanel ========
             {
                 contentPanel.setLayout(new FormLayout(
-                    "4*(default, $lcgap), default:grow",
-                    "3*(default, $lgap), fill:default:grow, $lgap, default"));
+                    "4*(default, $lcgap), default:grow, $lcgap, default",
+                    "4*(default, $lgap), fill:default:grow, $lgap, default"));
 
                 //---- connectButton ----
                 connectButton.setText("CONNECT");
@@ -631,49 +676,66 @@ public class SCKTalkFrame extends JFrame {
                 closePortButton.addActionListener(e -> closePortButtonActionPerformed(e));
                 contentPanel.add(closePortButton, CC.xy(9, 1));
 
+                //---- label7 ----
+                label7.setText("Select Model");
+                contentPanel.add(label7, CC.xy(1, 3));
+
+                //---- mimModelRadioButton ----
+                mimModelRadioButton.setText("SCK 300/P (MiM)");
+                mimModelRadioButton.setSelected(true);
+                contentPanel.add(mimModelRadioButton, CC.xywh(3, 3, 3, 1));
+
+                //---- ticModelRadioButton ----
+                ticModelRadioButton.setText("SCK-300S (Tic)");
+                contentPanel.add(ticModelRadioButton, CC.xy(7, 3));
+
                 //---- startStopButton ----
                 startStopButton.setText("Start/Stop");
                 startStopButton.setBackground(UIManager.getColor("Button.background"));
                 startStopButton.addActionListener(e -> startStopButtonActionPerformed(e));
-                contentPanel.add(startStopButton, CC.xy(1, 3));
+                contentPanel.add(startStopButton, CC.xy(1, 5));
 
                 //---- upButton ----
                 upButton.setText("Up");
                 upButton.addActionListener(e -> upButtonActionPerformed(e));
-                contentPanel.add(upButton, CC.xy(3, 3));
+                contentPanel.add(upButton, CC.xy(3, 5));
 
                 //---- downButton ----
                 downButton.setText("Down");
                 downButton.addActionListener(e -> downButtonActionPerformed(e));
-                contentPanel.add(downButton, CC.xy(5, 3));
+                contentPanel.add(downButton, CC.xy(5, 5));
 
                 //---- label3 ----
                 label3.setText(" Increment (rpm)");
-                contentPanel.add(label3, CC.xy(7, 3));
+                contentPanel.add(label3, CC.xy(7, 5));
 
                 //---- incrementTextField ----
                 incrementTextField.setText("100");
                 incrementTextField.addActionListener(e -> incrementTextFieldActionPerformed(e));
-                contentPanel.add(incrementTextField, CC.xy(9, 3));
+                contentPanel.add(incrementTextField, CC.xy(9, 5));
 
                 //---- label5 ----
-                label5.setText("Set Speed");
-                contentPanel.add(label5, CC.xy(1, 5));
+                label5.setText("Set Speed / Acc.");
+                contentPanel.add(label5, CC.xy(1, 7));
 
                 //---- speedTextField ----
                 speedTextField.setText("3250");
                 speedTextField.addActionListener(e -> speedTextFieldActionPerformed(e));
-                contentPanel.add(speedTextField, CC.xywh(3, 5, 3, 1));
+                contentPanel.add(speedTextField, CC.xy(3, 7));
+
+                //---- accTextField ----
+                accTextField.setText("500");
+                contentPanel.add(accTextField, CC.xy(5, 7));
 
                 //---- rampButton ----
                 rampButton.setText("Run Ramp Sequence");
                 rampButton.addActionListener(e -> rampButtonActionPerformed(e));
-                contentPanel.add(rampButton, CC.xy(7, 5));
+                contentPanel.add(rampButton, CC.xy(7, 7));
 
                 //---- motorProfileButton ----
                 motorProfileButton.setText("Get Motor Profile");
                 motorProfileButton.addActionListener(e -> motorProfileButtonActionPerformed(e));
-                contentPanel.add(motorProfileButton, CC.xy(9, 5));
+                contentPanel.add(motorProfileButton, CC.xy(9, 7));
 
                 //======== scrollPane2 ========
                 {
@@ -682,7 +744,7 @@ public class SCKTalkFrame extends JFrame {
                     rampTextArea.setText("Step, Speed (rpm), Dwell Time (s)\n1, 500, 30\n2, 1400, 40\n3, 3200, 60\n4, 1500, 10");
                     scrollPane2.setViewportView(rampTextArea);
                 }
-                contentPanel.add(scrollPane2, CC.xywh(1, 7, 5, 1));
+                contentPanel.add(scrollPane2, CC.xywh(1, 9, 5, 1));
 
                 //======== scrollPane1 ========
                 {
@@ -691,32 +753,32 @@ public class SCKTalkFrame extends JFrame {
                     consoleTextArea.setText("Output Console:");
                     scrollPane1.setViewportView(consoleTextArea);
                 }
-                contentPanel.add(scrollPane1, CC.xywh(7, 7, 3, 1));
+                contentPanel.add(scrollPane1, CC.xywh(7, 9, 3, 1));
 
                 //---- label2 ----
                 label2.setText("Spin Speed (rpm)");
-                contentPanel.add(label2, CC.xy(1, 9));
+                contentPanel.add(label2, CC.xy(1, 11));
 
                 //---- speedLabel ----
                 speedLabel.setText("00000");
                 speedLabel.setForeground(Color.red);
                 speedLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                contentPanel.add(speedLabel, CC.xy(3, 9));
+                contentPanel.add(speedLabel, CC.xy(3, 11));
 
                 //---- label4 ----
                 label4.setText("Spin Time (s)");
-                contentPanel.add(label4, CC.xy(5, 9));
+                contentPanel.add(label4, CC.xy(5, 11));
 
                 //---- spinTimeLabel ----
                 spinTimeLabel.setText("00000");
                 spinTimeLabel.setForeground(Color.red);
                 spinTimeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                contentPanel.add(spinTimeLabel, CC.xy(7, 9));
+                contentPanel.add(spinTimeLabel, CC.xy(7, 11));
 
                 //---- rampStepLabel ----
                 rampStepLabel.setText("Ramp Step # 0");
                 rampStepLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                contentPanel.add(rampStepLabel, CC.xy(9, 9));
+                contentPanel.add(rampStepLabel, CC.xy(9, 11));
             }
             dialogPane.add(contentPanel, BorderLayout.CENTER);
 
@@ -729,9 +791,9 @@ public class SCKTalkFrame extends JFrame {
 
                 //---- sckComboBox ----
                 sckComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
-                    "SCK-300: 6000, 5,  740, 200",
-                    "SCK-300P: 8000, 0, 960, 500",
-                    "SCK-300S: 2000, 4, 96, 0",
+                    "SCK-300_MIM: 6000, 5,  740, 200",
+                    "SCK-300P_MIM: 8000, 0, 960, 500",
+                    "SCK-300S_TIC: 5000, 4, 96, 0",
                     "SCK-TEST:10000, 5, 740, 200"
                 }));
                 sckComboBox.setEditable(true);
@@ -753,6 +815,11 @@ public class SCKTalkFrame extends JFrame {
         contentPane.add(dialogPane, BorderLayout.CENTER);
         pack();
         setLocationRelativeTo(getOwner());
+
+        //---- buttonGroup1 ----
+        ButtonGroup buttonGroup1 = new ButtonGroup();
+        buttonGroup1.add(mimModelRadioButton);
+        buttonGroup1.add(ticModelRadioButton);
         // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
 
@@ -764,6 +831,9 @@ public class SCKTalkFrame extends JFrame {
     private JLabel label1;
     private JComboBox<String> portComboBox;
     private JButton closePortButton;
+    private JLabel label7;
+    private JRadioButton mimModelRadioButton;
+    private JRadioButton ticModelRadioButton;
     private JToggleButton startStopButton;
     private JButton upButton;
     private JButton downButton;
@@ -771,6 +841,7 @@ public class SCKTalkFrame extends JFrame {
     private JTextField incrementTextField;
     private JLabel label5;
     private JTextField speedTextField;
+    private JTextField accTextField;
     private JButton rampButton;
     private JButton motorProfileButton;
     private JScrollPane scrollPane2;
