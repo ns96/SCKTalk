@@ -58,9 +58,7 @@ public class SCKTalkFrame extends JFrame {
         if(miMTalk != null) {
             miMTalk.motorOff();
             miMTalk.close();
-        }
-
-        if(ticTalk != null) {
+        } else if(ticTalk != null) {
             ticTalk.motorOff();
             ticTalk.close();
         }
@@ -80,7 +78,7 @@ public class SCKTalkFrame extends JFrame {
             if(mimModelRadioButton.isSelected()) {
                 connectToMiM(portName);
             } else {
-
+                connectToTic(portName);
             }
         } catch(Exception ex) {
             printMessage("\n\nCOMM PORT ERROR -- " + portName);
@@ -114,7 +112,7 @@ public class SCKTalkFrame extends JFrame {
     }
 
     /**
-     * Connect to the MiM board for SCK-300/300P
+     * Connect to the Tic board for SCK-300S
      */
     private void connectToTic(String portName) {
         ticTalk = new TicTalk();
@@ -122,15 +120,15 @@ public class SCKTalkFrame extends JFrame {
 
         String response = ticTalk.getVersion();
 
-        printMessage("SCK Response: " + response);
+        printMessage("SCK-300S Response: " + response);
 
-        if (response.contains("Tic")) {
-            printMessage("Connected to SCK unit ...\n");
+        if (response.contains("TIC_SCK")) {
+            printMessage("Connected to SCK-300S unit ...\n");
             sendSCKParameters();
             connectButton.setBackground(Color.ORANGE);
             connectButton.setEnabled(false);
         } else {
-            printMessage("Error Connecting to Tic ...\n");
+            printMessage("Error Connecting to TIC_300S ...\n");
             ticTalk.close();
             ticTalk = null;
         }
@@ -153,7 +151,7 @@ public class SCKTalkFrame extends JFrame {
 
             // see if to set the motor type based on the choice of user
             sckType = sa1[0].trim();
-            if(sckType.equals("SCK-300S")) {
+            if(sckType.contains("SCK-300S")) {
                 //miMTalk.setMotorType(MiMTalk.MotorType.STEPPER);
                 String response = ticTalk.setStepperParameters(startPWM, slope, maxSpeed);
                 printMessage("Setting SCK Stepper parameters: " + response);
@@ -186,6 +184,11 @@ public class SCKTalkFrame extends JFrame {
             connectButton.setBackground(Color.YELLOW);
             connectButton.setEnabled(true);
             printMessage("\nClosed SCK connection ...");
+        } else if(ticTalk != null) {
+            ticTalk.close();
+            connectButton.setBackground(Color.YELLOW);
+            connectButton.setEnabled(true);
+            printMessage("\nClosed SCK-300S connection ...");
         }
     }
 
@@ -194,7 +197,7 @@ public class SCKTalkFrame extends JFrame {
      * @param e
      */
     private void startStopButtonActionPerformed(ActionEvent e) {
-        if(miMTalk == null) { return; }
+        if(miMTalk == null && ticTalk == null) { return; }
 
         if(startStopButton.isSelected()) {
             sckRunning = true;
@@ -202,75 +205,131 @@ public class SCKTalkFrame extends JFrame {
             // set the current speed
             speedTextFieldActionPerformed(null);
 
-            // now send command to go to the desired speed
-            miMTalk.motorOn();
-
-            /* run this in separate thread to allow the gui to update
-            Thread motorThread = new Thread() {
-                public void run() {
-                    if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                        miMTalk.rampToRPM(currentSpeed);
-                    } else {
-                        miMTalk.rampStepperToRPM(0, currentSpeed);
-                    }
-                }
-            };
-            motorThread.start();*/
-
-            // ramp to the motor speed
-            if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                miMTalk.rampToRPM(currentSpeed);
-            } else {
-                miMTalk.rampStepperToRPM(0, currentSpeed);
+            if(miMTalk != null) {
+                runMimTalkMotor();
+            } else if(ticTalk != null) {
+                runTicTalkMotor();
             }
-
-            // start the thread to update the time and check for new speed settings
-            Thread timerThread = new Thread() {
-                public void run() {
-                    int ticks = 0;
-                    int oldSpeed = currentSpeed;
-
-                    while(sckRunning) {
-                        try {
-                            sleep(500);
-                        } catch (InterruptedException ex) {
-                            break;
-                        }
-
-                        // update the timer
-                        String timeString = SCKUtils.zeroPad(ticks/2);
-                        spinTimeLabel.setText(timeString);
-
-                        // read the rpm and update the speed label
-                        String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
-                        speedLabel.setText(speedString);
-
-                        // check to make sure we don't have to update the speed
-                        if(currentSpeed != oldSpeed) {
-                            if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                                miMTalk.setRPM(currentSpeed);
-                            } else {
-                                miMTalk.rampStepperToRPM(oldSpeed, currentSpeed);
-                            }
-
-                            oldSpeed = currentSpeed;
-                        }
-
-                        ticks++;
-                    }
-
-                    // stop the motor and reset the timer
-                    miMTalk.motorOff();
-                    spinTimeLabel.setText("00000");
-                    speedLabel.setText("00000");
-                }
-            };
-
-            timerThread.start();
         } else {
             sckRunning = false;
             System.out.println("Stop motor ...");
         }
+    }
+
+    /**
+     * Run the mim talk driven motor
+     */
+    private void runMimTalkMotor() {
+        // now send command to go to the desired speed
+        miMTalk.motorOn();
+
+        // ramp to the motor speed
+        if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+            miMTalk.rampToRPM(currentSpeed);
+        } else {
+            miMTalk.rampStepperToRPM(0, currentSpeed);
+        }
+
+        // start the thread to update the time and check for new speed settings
+        Thread timerThread = new Thread() {
+            public void run() {
+                int ticks = 0;
+                int oldSpeed = currentSpeed;
+
+                while(sckRunning) {
+                    try {
+                        sleep(500);
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+
+                    // update the timer
+                    String timeString = SCKUtils.zeroPad(ticks/2);
+                    spinTimeLabel.setText(timeString);
+
+                    // read the rpm and update the speed label
+                    String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
+                    speedLabel.setText(speedString);
+
+                    // check to make sure we don't have to update the speed
+                    if(currentSpeed != oldSpeed) {
+                        if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                            miMTalk.setRPM(currentSpeed);
+                        } else {
+                            miMTalk.rampStepperToRPM(oldSpeed, currentSpeed);
+                        }
+
+                        oldSpeed = currentSpeed;
+                    }
+
+                    ticks++;
+                }
+
+                // stop the motor and reset the timer
+                miMTalk.motorOff();
+                spinTimeLabel.setText("00000");
+                speedLabel.setText("00000");
+            }
+        };
+
+        timerThread.start();
+    }
+
+    /**
+     * Run the mim talk driven motor
+     */
+    private void runTicTalkMotor() {
+        // now send command to go to the desired speed
+        ticTalk.motorOn();
+
+        // ramp to the motor speed
+        try {
+            int rpmPerSec = Integer.parseInt(accTextField.getText());
+            ticTalk.setAcceleration(rpmPerSec);
+            ticTalk.setRPM(currentSpeed);
+        } catch(NumberFormatException nfe) {
+            nfe.printStackTrace();
+            ticTalk.motorOff();
+        }
+
+        // start the thread to update the time and check for new speed settings
+        Thread timerThread = new Thread() {
+            public void run() {
+                int ticks = 0;
+                int oldSpeed = currentSpeed;
+
+                while(sckRunning) {
+                    try {
+                        sleep(500);
+                    } catch (InterruptedException ex) {
+                        break;
+                    }
+
+                    // update the timer
+                    String timeString = SCKUtils.zeroPad(ticks/2);
+                    spinTimeLabel.setText(timeString);
+
+                    // read the rpm and update the speed label
+                    String speedString = SCKUtils.zeroPad(ticTalk.getRPM(roundToValue));
+                    speedLabel.setText(speedString);
+
+                    // check to make sure we don't have to update the speed
+                    if(currentSpeed != oldSpeed) {
+                        ticTalk.setRPM(currentSpeed);
+                        oldSpeed = currentSpeed;
+                    }
+
+                    ticks++;
+                }
+
+                // stop the motor and reset the timer
+                ticTalk.motorOff();
+                spinTimeLabel.setText("00000");
+                speedLabel.setText("00000");
+            }
+        };
+
+        timerThread.start();
     }
 
     /**
@@ -590,6 +649,22 @@ public class SCKTalkFrame extends JFrame {
         consoleTextArea.setText("");
     }
 
+    /**
+     * If tick model is selected then we need to set the selection to SCK-300S
+     * @param e
+     */
+    private void ticModel(ActionEvent e) {
+        sckComboBox.setSelectedIndex(2);
+    }
+
+    /**
+     * Set that SCK-300 or SCK-300P is selected
+     * @param e
+     */
+    private void mimModel(ActionEvent e) {
+        sckComboBox.setSelectedIndex(1);
+    }
+
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents
         // Generated using JFormDesigner non-commercial license
@@ -627,7 +702,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.1.0 (01/19/2022)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.1.0 (05/11/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -683,10 +758,12 @@ public class SCKTalkFrame extends JFrame {
                 //---- mimModelRadioButton ----
                 mimModelRadioButton.setText("SCK 300/P (MiM)");
                 mimModelRadioButton.setSelected(true);
+                mimModelRadioButton.addActionListener(e -> mimModel(e));
                 contentPanel.add(mimModelRadioButton, CC.xywh(3, 3, 3, 1));
 
                 //---- ticModelRadioButton ----
                 ticModelRadioButton.setText("SCK-300S (Tic)");
+                ticModelRadioButton.addActionListener(e -> ticModel(e));
                 contentPanel.add(ticModelRadioButton, CC.xy(7, 3));
 
                 //---- startStopButton ----

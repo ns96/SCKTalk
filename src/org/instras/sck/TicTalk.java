@@ -26,7 +26,7 @@ public class TicTalk {
     private boolean testMode = false;
 
     // stepper motor parameters
-    private int excitation;
+    private int microstep;
     private int stepsPerRev;
     private int maxMotorRPM;
 
@@ -43,6 +43,12 @@ public class TicTalk {
 
         ins = new DataInputStream(serial.getInputStream());
         outs = new DataOutputStream(serial.getOutputStream());
+
+        // set to TIC Mode
+        try {
+            Thread.sleep(500);
+            sendCommand("x");
+        } catch(InterruptedException e) {}
     }
 
     /**
@@ -55,28 +61,37 @@ public class TicTalk {
     }
 
     /**
-     * Method to send a command to the MiM board
+     * Send the command string to MiM board
      *
      * @param command
      * @return
      */
-    public synchronized String sendCommand(byte command, byte[] data) {
+    public String sendCommand(String command) {
+        return sendCommand(command, true);
+    }
+
+    /**
+     * Method to send a command to the MiM board
+     *
+     * @param command
+     * @param wfr wait for response
+     * @return
+     */
+    public synchronized String sendCommand(String command, boolean wfr) {
         if(testMode) return "OK";
 
-        byte[] cmdWithData = new byte[data.length + 1];
-        cmdWithData[0] = command;
-        for(int i = 1; i < cmdWithData.length; i++) {
-            cmdWithData[i] = data[i-1];
-        }
-
         try {
-            outs.write(command);
+            command += "\r\n";
+            outs.writeBytes(command);
+            if(wfr) {
+                return readResponse();
+            } else {
+                return "";
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            return "ERR";
+            return null;
         }
-
-        return "OK";
     }
 
     /**
@@ -84,34 +99,45 @@ public class TicTalk {
      *
      * @return
      */
-    public byte[] readResponse(byte offset, byte length) {
-        if(testMode) return new byte[]{-1,-1};
+    public String readResponse() {
+        if(testMode) return "TESTMODE";
 
         try {
-            byte[] data = {offset, length};
-            sendCommand((byte)0xA1, data);
-
-            // wait 0.100 second so data can arrive from Tic Board
+            // wait 0.100 second so data can arrive from MiM
             Thread.sleep(100);
 
-            byte[] buffer = new byte[length];
-            int result = ins.read(buffer);
+            StringBuilder sb = new StringBuilder(); //ins.readUTF();
+            byte[] buffer = new byte[128];
+            int len = -1;
 
-            return buffer;
+            while ((len = ins.read(buffer)) > 0 ) {
+                sb.append(new String(buffer,0,len));
+            }
+
+            String response = sb.toString().trim();
+            //System.out.println("Response: " + response);
+            return response;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        return null;
+        return "ERROR";
     }
 
     /**
-     * Method to turn the BLDC motor on
+     * Method to turn the Stepper motor on
+     */
+    public void motorOn() {
+        sendCommand("STEPon,0");
+    }
+
+    /**
+     * Method to turn the Stepper motor off
      */
     public void motorOff() {
-        //sendCommand("STEPoff");
+        sendCommand("STEPoff,0");
     }
 
     /**
@@ -120,22 +146,76 @@ public class TicTalk {
      * @return
      */
     public String getVersion() {
-        return "Tic";
+        return sendCommand("GetVersion,0");
     }
 
     /**
      * Set the parameters for the stepper motors
      *
-     * @param excitation This is the microsteping for the motor. For SCK-300S its fixed at 4
+     * @param microstep This is the micro-stepping for the motor. For SCK-300S its fixed at 4
      * @param stepsPerRev The steps per revolution of stepper motor, 96 for SCK-300S
+     * @param maxMotorRPM The maximum motor RPM
      * @return
      */
-    public String setStepperParameters(int excitation, int stepsPerRev, int maxMotorRPM) {
-        this.excitation  = excitation;
+    public String setStepperParameters(int microstep, int stepsPerRev, int maxMotorRPM) {
+        this.microstep  = microstep;
         this.stepsPerRev = stepsPerRev;
         this.maxMotorRPM = maxMotorRPM;
 
+        sendCommand("SetMicro," + microstep);
+        sendCommand("SetSPR," + stepsPerRev);
+        sendCommand("SetMaxRPM," + maxMotorRPM);
+
         return "OK";
+    }
+
+    /**
+     * Set the acceleration
+     * @param rpmPerSec
+     */
+    public void setAcceleration(int rpmPerSec) {
+        sendCommand("SetACC," + rpmPerSec);
+    }
+
+    /**
+     * Method to set the rpm
+     *
+     * @param desiredRPM
+     */
+    public void setRPM(int desiredRPM) {
+        sendCommand("SetRPM," + desiredRPM);
+    }
+
+    /**
+     * A convenience method to get the RPM value as an it
+     *
+     * @return
+     */
+    public int getRPM(double roundTo) {
+        int rpm = -1;
+
+        try {
+            String response = sendCommand("GetRPM,0");
+            rpm = Integer.parseInt(response.trim());
+
+            if (roundTo > 0) {
+                rpm = (int) (Math.round(rpm / roundTo) * roundTo);
+            }
+        } catch(NumberFormatException nfe) {}
+
+        return rpm;
+    }
+
+    /**
+     * Extract the value from the response string
+     *
+     * @param response
+     * @return
+     */
+    public String getResponseValue(String response) {
+        int idx1 = response.indexOf(",") + 1;
+        int idx2 = response.indexOf(":");
+        return response.substring(idx1, idx2);
     }
 
     /**
@@ -143,6 +223,14 @@ public class TicTalk {
      */
     public void close() {
         if(testMode) return;
+
+        try {
+            sendCommand("x");
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         serial.disconnect();
     }
 }
