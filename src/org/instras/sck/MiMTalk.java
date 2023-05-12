@@ -25,7 +25,7 @@ public class MiMTalk {
         STEPPER
     }
 
-    private boolean testMode = false;
+    public boolean testMode = false;
 
     public int minMotorRPM = 0;
 
@@ -46,6 +46,10 @@ public class MiMTalk {
     private DataOutputStream outs;
 
     public MotorType currentMotor = MotorType.BLDC;
+
+    private final int RESPONSE_DELAY_MS = 100; // The response delay in milliseconds
+
+    private boolean runRamp = false; // used to breakout of the run ramp program
 
     /**
      * Set the motor type
@@ -128,11 +132,10 @@ public class MiMTalk {
      * @return
      */
     public String readResponse() {
-        if(testMode) return "TESTMODE";
-
         try {
             // wait 0.100 second so data can arrive from MiM
-            Thread.sleep(100);
+            Thread.sleep(RESPONSE_DELAY_MS);
+            if(testMode) return "TESTMODE,0:TT";
 
             StringBuilder sb = new StringBuilder(); //ins.readUTF();
             byte[] buffer = new byte[128];
@@ -249,26 +252,88 @@ public class MiMTalk {
      * @param desiredRPM
      */
     public void rampToRPM(int desiredRPM) {
-        try {
-            if(desiredRPM <= 500) {
-                sendCommand("SetRPM," + desiredRPM);
-                System.out.println("Setting Desired RPM Directly: " + desiredRPM);
-            } else {
-                int step = 300;
-                for(int i = 500; i <= (desiredRPM + step); i += step) {
-                    int speed = i;
+        if (desiredRPM <= 500) {
+            sendCommand("SetRPM," + desiredRPM);
+            System.out.println("Setting Desired RPM Directly: " + desiredRPM);
+        } else {
+            int step = 300;
+            for (int i = 500; i <= (desiredRPM + step); i += step) {
+                int speed = i;
 
-                    if(speed > desiredRPM) {
-                        speed = desiredRPM;
-                    }
-
-                    System.out.println("Setting Speed " + speed + " index: " + i);
-                    sendCommand("SetRPM," + speed);
-                    Thread.sleep(2);
+                if (speed > desiredRPM) {
+                    speed = desiredRPM;
                 }
+
+                System.out.println("Setting Speed " + speed + " index: " + i);
+                sendCommand("SetRPM," + speed);
             }
+        }
+    }
+
+    /**
+     * Method to move to desired rpm at a particular acceleration
+     *
+     * @param desiredRPM
+     * @param acceleration in RPM per second
+     * @param currentRPM The current speed
+     * @param currentTime The current time in seconds
+     * @param speedLabel used to update speed
+     * @param timeLabel used to update the time label
+     * @return The time in seconds it took to run ramp
+     */
+    public int rampToRPM(int desiredRPM, float acceleration, int currentRPM, int currentTime,
+                         JLabel speedLabel, JLabel timeLabel) {
+        try {
+            runRamp = true;
+
+            // calculate the time to desired rpm in milliseconds
+            float timeToDesiredRPM = (desiredRPM/acceleration)*1000;
+            System.out.println("Time to Desired RPM: " + timeToDesiredRPM);
+            int timeTotal = currentTime*1000;
+            int cps = 4; // the commands to send per second
+            int delayMS = 1000/cps - RESPONSE_DELAY_MS;
+            if(delayMS < 0) delayMS = 0;
+
+
+            int step = (int)acceleration/cps;
+            int startRPM;
+            if(currentRPM == 0) {
+                startRPM = (step >= 250) ? step : 250;
+            } else {
+                startRPM = currentRPM;
+            }
+
+            for (int i = startRPM; i <= (desiredRPM + step); i += step) {
+                // check to see to continue running the ramp program
+                if(!runRamp) break;
+
+                int speed = i;
+
+                if (speed > desiredRPM) {
+                    speed = desiredRPM;
+                }
+
+                //System.out.println("Setting Speed " + speed + " index: " + i + " delay: " + delayMS);
+                sendCommand("SetRPM," + speed);
+
+                if(speedLabel != null) {
+                    String speedString = SCKUtils.zeroPad(speed);
+                    speedLabel.setText(speedString);
+
+                    String speedTime = SCKUtils.zeroPad(timeTotal/1000);
+                    timeLabel.setText(speedTime);
+                }
+
+                Thread.sleep(delayMS);
+                timeTotal += delayMS + RESPONSE_DELAY_MS;
+            }
+
+            System.out.println("Time Actually Taken: " + timeTotal);
+
+            return timeTotal/1000;
         } catch (InterruptedException e) {
             e.printStackTrace();
+            return 0;
         }
     }
 
@@ -337,11 +402,20 @@ public class MiMTalk {
     }
 
     /**
+     * Method used to stop the ramp program
+     */
+    public void stopRamp() {
+        runRamp = false;
+    }
+
+    /**
      * A convenience method to get the RPM value as an it
      *
      * @return
      */
     public int getRPM(double roundTo) {
+        if(testMode) return -1;
+
         int rpm = -1;
 
         if(currentMotor == MotorType.BLDC) {
@@ -560,6 +634,18 @@ public class MiMTalk {
         this.maxMotorRPM = maxMotorRPM;
 
         return "OK";
+    }
+
+    /**
+     * Indicate whether the serial port is connected
+     *
+     * @return
+     */
+    public boolean isConnected() {
+        if(serial != null) {
+            return serial.isConnected();
+        }
+        return false;
     }
 
     /**

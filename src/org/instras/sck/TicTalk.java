@@ -46,7 +46,7 @@ public class TicTalk {
 
         // set to TIC Mode
         try {
-            Thread.sleep(500);
+            Thread.sleep(1000);
             sendCommand("x");
         } catch(InterruptedException e) {}
     }
@@ -81,6 +81,7 @@ public class TicTalk {
         if(testMode) return "OK";
 
         try {
+            //System.out.println("Command: " + command);
             command += "\r\n";
             outs.writeBytes(command);
             if(wfr) {
@@ -103,8 +104,8 @@ public class TicTalk {
         if(testMode) return "TESTMODE";
 
         try {
-            // wait 0.100 second so data can arrive from MiM
-            Thread.sleep(100);
+            // wait 0.200 second so data can arrive from Tic
+            Thread.sleep(200);
 
             StringBuilder sb = new StringBuilder(); //ins.readUTF();
             byte[] buffer = new byte[128];
@@ -187,7 +188,7 @@ public class TicTalk {
     }
 
     /**
-     * A convenience method to get the RPM value as an it
+     * A convenience method to get the RPM value as an int
      *
      * @return
      */
@@ -232,5 +233,16 @@ public class TicTalk {
         }
 
         serial.disconnect();
+    }
+
+    /**
+     * Indicate whether the serial port is connected
+     * @return
+     */
+    public boolean isConnected() {
+        if(serial != null) {
+            return serial.isConnected();
+        }
+        return false;
     }
 }

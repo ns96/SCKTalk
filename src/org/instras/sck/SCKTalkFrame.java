@@ -24,13 +24,15 @@ public class SCKTalkFrame extends JFrame {
 
     private int minSpeed = 0; // the minimum speed
 
-    private int currentSpeed = 1500; // the current speed
+    private int currentSpeed = 2500; // the current speed
 
     private boolean sckRunning = false;
 
     private double roundToValue = 25.0; // used for rounding the rpm
 
     private String sckType = "SCK-300P";
+
+    private int ticks = 0; // used to keep track of motor run time
 
     public SCKTalkFrame() {
         initComponents();
@@ -55,10 +57,10 @@ public class SCKTalkFrame extends JFrame {
      * @param e
      */
     private void exitButtonActionPerformed(ActionEvent e) {
-        if(miMTalk != null) {
+        if(miMTalk != null && miMTalk.isConnected()) {
             miMTalk.motorOff();
             miMTalk.close();
-        } else if(ticTalk != null) {
+        } else if(ticTalk != null && ticTalk.isConnected()) {
             ticTalk.motorOff();
             ticTalk.close();
         }
@@ -99,7 +101,7 @@ public class SCKTalkFrame extends JFrame {
 
         printMessage("SCK Response: " + response);
 
-        if (response.contains("MIM")) {
+        if (response.contains("MIM") || miMTalk.testMode) {
             printMessage("Connected to SCK unit ...\n");
             sendSCKParameters();
             connectButton.setBackground(Color.ORANGE);
@@ -201,6 +203,7 @@ public class SCKTalkFrame extends JFrame {
 
         if(startStopButton.isSelected()) {
             sckRunning = true;
+            ticks = 0;
 
             // set the current speed
             speedTextFieldActionPerformed(null);
@@ -211,6 +214,10 @@ public class SCKTalkFrame extends JFrame {
                 runTicTalkMotor();
             }
         } else {
+            if(miMTalk != null) {
+                miMTalk.stopRamp(); // stop the ramp process just in case
+            }
+
             sckRunning = false;
             System.out.println("Stop motor ...");
         }
@@ -223,17 +230,9 @@ public class SCKTalkFrame extends JFrame {
         // now send command to go to the desired speed
         miMTalk.motorOn();
 
-        // ramp to the motor speed
-        if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-            miMTalk.rampToRPM(currentSpeed);
-        } else {
-            miMTalk.rampStepperToRPM(0, currentSpeed);
-        }
-
-        // start the thread to update the time and check for new speed settings
+        // crete a timer thread to update the time and check for new speed settings
         Thread timerThread = new Thread() {
             public void run() {
-                int ticks = 0;
                 int oldSpeed = currentSpeed;
 
                 while(sckRunning) {
@@ -272,7 +271,31 @@ public class SCKTalkFrame extends JFrame {
             }
         };
 
-        timerThread.start();
+        // start motor in swing worker thread
+        SwingWorker sw1 = new SwingWorker() {
+            @Override
+            protected String doInBackground() {
+                int acceleration = Integer.parseInt(accTextField.getText());
+
+                // ramp to the motor speed in swing worker
+                if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                    int rampTime = miMTalk.rampToRPM(currentSpeed, acceleration, 0,0, speedLabel, spinTimeLabel);
+                    ticks = rampTime*2;
+                } else {
+                    miMTalk.rampStepperToRPM(0, currentSpeed);
+                }
+
+                return "Done";
+            }
+
+            @Override
+            protected void done()  {
+                timerThread.start();
+            }
+        };
+
+        // Executes the swingworker on worker thread
+        sw1.execute();
     }
 
     /**
@@ -425,6 +448,7 @@ public class SCKTalkFrame extends JFrame {
         if(!sckRunning) {
             startStopButton.setSelected(true);
             rampButton.setEnabled(false);
+            ticks = 0;
             startStepSequence();
         }
     }
@@ -443,6 +467,8 @@ public class SCKTalkFrame extends JFrame {
             public Boolean doInBackground() {
                 sckRunning = true;
 
+                int acceleration = Integer.parseInt(accTextField.getText());
+
                 // turn the motor on
                 miMTalk.motorOn();
 
@@ -452,6 +478,7 @@ public class SCKTalkFrame extends JFrame {
                 printMessage("Starting Ramp Sequence ...");
 
                 int currentSpeed = 0; // keep track of the current speed to the stepper motor
+                int currentTime = 0; // keep track of current time
 
                 // iterate over the lines containing the sequences
                 outerloop:
@@ -463,13 +490,16 @@ public class SCKTalkFrame extends JFrame {
                     printMessage(stepInfo[0] + ", " + targetSpeed + " rpms, " + targetSpinTime + " sec");
 
                     if(miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                        if (i == 1) {
-                            miMTalk.rampToRPM(targetSpeed);
+                        if(targetSpeed > currentSpeed) {
+                            miMTalk.rampToRPM(targetSpeed, acceleration, currentSpeed, 0, speedLabel, spinTimeLabel);
                         } else {
+                            // we are slowing down
                             miMTalk.setRPM(targetSpeed);
                         }
+
+                        currentSpeed = targetSpeed;
                     } else {
-                        // we using the stepper driver
+                        // TO-DO FIX THIS FOR NEW TIC controller
                         miMTalk.rampStepperToRPM(currentSpeed, targetSpeed);
                         currentSpeed = targetSpeed;
                     }
@@ -502,6 +532,9 @@ public class SCKTalkFrame extends JFrame {
 
                         count++;
                     }
+
+                    // keep track of current time. likely not needed
+                    currentTime += count;
                 }
 
                 printMessage("\nRamp Sequence Completed ...");
@@ -702,7 +735,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.1.0 (05/11/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.0 (05/12/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
