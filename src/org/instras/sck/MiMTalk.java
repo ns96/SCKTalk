@@ -47,7 +47,7 @@ public class MiMTalk {
 
     public MotorType currentMotor = MotorType.BLDC;
 
-    private final int RESPONSE_DELAY_MS = 100; // The response delay in milliseconds
+    public final int RESPONSE_DELAY_MS = 200; // The response delay in milliseconds
 
     private boolean runRamp = false; // used to breakout of the run ramp program
 
@@ -90,6 +90,12 @@ public class MiMTalk {
 
         ins = new DataInputStream(serial.getInputStream());
         outs = new DataOutputStream(serial.getOutputStream());
+
+        // set to TIC Mode
+        try {
+            Thread.sleep(2000);
+            sendCommand("y");
+        } catch(InterruptedException e) {}
     }
 
     /**
@@ -133,7 +139,7 @@ public class MiMTalk {
      */
     public String readResponse() {
         try {
-            // wait 0.100 second so data can arrive from MiM
+            // wait 0.n00 second so data can arrive from MiM
             Thread.sleep(RESPONSE_DELAY_MS);
             if(testMode) return "TESTMODE,0:TT";
 
@@ -276,12 +282,11 @@ public class MiMTalk {
      * @param desiredRPM
      * @param acceleration in RPM per second
      * @param currentRPM The current speed
-     * @param currentTime The current time in seconds
      * @param speedLabel used to update speed
      * @param timeLabel used to update the time label
      * @return The time in seconds it took to run ramp
      */
-    public int rampToRPM(int desiredRPM, float acceleration, int currentRPM, int currentTime,
+    public int rampToRPM(int desiredRPM, float acceleration, int currentRPM,
                          JLabel speedLabel, JLabel timeLabel) {
         try {
             runRamp = true;
@@ -289,7 +294,7 @@ public class MiMTalk {
             // calculate the time to desired rpm in milliseconds
             float timeToDesiredRPM = (desiredRPM/acceleration)*1000;
             System.out.println("Time to Desired RPM: " + timeToDesiredRPM);
-            int timeTotal = currentTime*1000;
+            int timeTotal = 0;
             int cps = 4; // the commands to send per second
             int delayMS = 1000/cps - RESPONSE_DELAY_MS;
             if(delayMS < 0) delayMS = 0;
@@ -592,6 +597,14 @@ public class MiMTalk {
      */
     public void close() {
         if(testMode) return;
+
+        try {
+            sendCommand("y");
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         serial.disconnect();
     }
 

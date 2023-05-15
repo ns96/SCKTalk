@@ -25,6 +25,8 @@ public class TicTalk {
 
     private boolean testMode = false;
 
+    public final int RESPONSE_DELAY_MS = 200; // The response delay in milliseconds
+
     // stepper motor parameters
     private int microstep;
     private int stepsPerRev;
@@ -46,7 +48,7 @@ public class TicTalk {
 
         // set to TIC Mode
         try {
-            Thread.sleep(1000);
+            Thread.sleep(2000);
             sendCommand("x");
         } catch(InterruptedException e) {}
     }
@@ -105,7 +107,7 @@ public class TicTalk {
 
         try {
             // wait 0.200 second so data can arrive from Tic
-            Thread.sleep(200);
+            Thread.sleep(RESPONSE_DELAY_MS);
 
             StringBuilder sb = new StringBuilder(); //ins.readUTF();
             byte[] buffer = new byte[128];
@@ -205,18 +207,6 @@ public class TicTalk {
         } catch(NumberFormatException nfe) {}
 
         return rpm;
-    }
-
-    /**
-     * Extract the value from the response string
-     *
-     * @param response
-     * @return
-     */
-    public String getResponseValue(String response) {
-        int idx1 = response.indexOf(",") + 1;
-        int idx2 = response.indexOf(":");
-        return response.substring(idx1, idx2);
     }
 
     /**

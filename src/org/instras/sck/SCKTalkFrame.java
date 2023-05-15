@@ -101,7 +101,7 @@ public class SCKTalkFrame extends JFrame {
 
         printMessage("SCK Response: " + response);
 
-        if (response.contains("MIM") || miMTalk.testMode) {
+        if (response != null && response.contains("MIM") || miMTalk.testMode) {
             printMessage("Connected to SCK unit ...\n");
             sendSCKParameters();
             connectButton.setBackground(Color.ORANGE);
@@ -124,7 +124,7 @@ public class SCKTalkFrame extends JFrame {
 
         printMessage("SCK-300S Response: " + response);
 
-        if (response.contains("TIC_SCK")) {
+        if (response != null && response.contains("TIC_SCK")) {
             printMessage("Connected to SCK-300S unit ...\n");
             sendSCKParameters();
             connectButton.setBackground(Color.ORANGE);
@@ -279,7 +279,7 @@ public class SCKTalkFrame extends JFrame {
 
                 // ramp to the motor speed in swing worker
                 if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                    int rampTime = miMTalk.rampToRPM(currentSpeed, acceleration, 0,0, speedLabel, spinTimeLabel);
+                    int rampTime = miMTalk.rampToRPM(currentSpeed, acceleration, 0, speedLabel, spinTimeLabel);
                     ticks = rampTime*2;
                 } else {
                     miMTalk.rampStepperToRPM(0, currentSpeed);
@@ -294,7 +294,7 @@ public class SCKTalkFrame extends JFrame {
             }
         };
 
-        // Executes the swingworker on worker thread
+        // Executes the swing worker on worker thread
         sw1.execute();
     }
 
@@ -449,14 +449,14 @@ public class SCKTalkFrame extends JFrame {
             startStopButton.setSelected(true);
             rampButton.setEnabled(false);
             ticks = 0;
-            startStepSequence();
+            runStepSequence();
         }
     }
 
     /**
      * Method to run the ramp step sequence
      */
-    private void startStepSequence() {
+    private void runStepSequence() {
         // check that the sequence is good
         final String[] stepSeqences = checkStepSequences();
         if(stepSeqences == null) { return; }
@@ -470,7 +470,11 @@ public class SCKTalkFrame extends JFrame {
                 int acceleration = Integer.parseInt(accTextField.getText());
 
                 // turn the motor on
-                miMTalk.motorOn();
+                if(miMTalk != null) {
+                    miMTalk.motorOn();
+                } else {
+                    ticTalk.motorOn();
+                }
 
                 // clear the console
                 consoleTextArea.setText("");
@@ -478,7 +482,8 @@ public class SCKTalkFrame extends JFrame {
                 printMessage("Starting Ramp Sequence ...");
 
                 int currentSpeed = 0; // keep track of the current speed to the stepper motor
-                int currentTime = 0; // keep track of current time
+                String countDownTime;
+                String speedString;
 
                 // iterate over the lines containing the sequences
                 outerloop:
@@ -489,19 +494,51 @@ public class SCKTalkFrame extends JFrame {
 
                     printMessage(stepInfo[0] + ", " + targetSpeed + " rpms, " + targetSpinTime + " sec");
 
-                    if(miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
-                        if(targetSpeed > currentSpeed) {
-                            miMTalk.rampToRPM(targetSpeed, acceleration, currentSpeed, 0, speedLabel, spinTimeLabel);
+                    if(miMTalk !=null) {
+                        if(miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
+                            if(targetSpeed > currentSpeed) {
+                                miMTalk.rampToRPM(targetSpeed, acceleration, currentSpeed, speedLabel, spinTimeLabel);
+                            } else {
+                                // we are slowing down
+                                miMTalk.setRPM(targetSpeed);
+                            }
+
+                            currentSpeed = targetSpeed;
                         } else {
-                            // we are slowing down
-                            miMTalk.setRPM(targetSpeed);
+                            miMTalk.rampStepperToRPM(currentSpeed, targetSpeed);
+                            currentSpeed = targetSpeed;
+                        }
+                    } else {
+                        // assume we are using tic stepper driver
+                        ticTalk.setAcceleration(acceleration);
+                        ticTalk.setRPM(targetSpeed);
+
+                        // TO-DO wait for motor to get to final speed based on acceleration
+                        float speedRange = Math.abs(targetSpeed - currentSpeed);
+                        float timeToDesiredSpeed = (speedRange/acceleration)*1000;
+                        int speed = 0;
+                        int rampTime = 0;
+                        int delay = 300;
+
+                        while(rampTime < timeToDesiredSpeed && speed < targetSpeed) {
+                            try {
+                                if(!sckRunning) break;
+
+                                Thread.sleep(delay);
+                                rampTime += delay + ticTalk.RESPONSE_DELAY_MS;
+
+                                String countUpTime = SCKUtils.zeroPad(rampTime/1000);
+                                spinTimeLabel.setText(countUpTime);
+
+                                speed = ticTalk.getRPM(roundToValue);
+                                speedString = SCKUtils.zeroPad(speed);
+                                speedLabel.setText(speedString);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
 
-                        currentSpeed = targetSpeed;
-                    } else {
-                        // TO-DO FIX THIS FOR NEW TIC controller
-                        miMTalk.rampStepperToRPM(currentSpeed, targetSpeed);
-                        currentSpeed = targetSpeed;
+                        System.out.println("Done Ramping Stepper Motor ...");
                     }
 
                     // update the ramp step label
@@ -517,11 +554,16 @@ public class SCKTalkFrame extends JFrame {
                         }
 
                         // update the count timer
-                        String countDownTime = SCKUtils.zeroPad(targetSpinTime - count);
+                        countDownTime = SCKUtils.zeroPad(targetSpinTime - count);
                         spinTimeLabel.setText(countDownTime);
 
                         // get the current rpm
-                        String speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
+                        if(miMTalk !=null) {
+                            speedString = SCKUtils.zeroPad(miMTalk.getRPM(roundToValue));
+                        } else {
+                            speedString = SCKUtils.zeroPad(ticTalk.getRPM(roundToValue));
+                        }
+
                         speedLabel.setText(speedString);
 
                         try {
@@ -532,15 +574,17 @@ public class SCKTalkFrame extends JFrame {
 
                         count++;
                     }
-
-                    // keep track of current time. likely not needed
-                    currentTime += count;
                 }
 
                 printMessage("\nRamp Sequence Completed ...");
 
                 // stop the motor now
-                miMTalk.motorOff();
+                if(miMTalk != null) {
+                    miMTalk.motorOff();
+                } else {
+                    ticTalk.motorOff();
+                }
+
                 sckRunning = false;
 
                 // reset the labels and start stop button
@@ -735,7 +779,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.0 (05/12/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.0 (05/15/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
