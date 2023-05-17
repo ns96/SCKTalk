@@ -127,7 +127,8 @@ public class MiMTalk {
                 return "";
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("COMM/IO Error. Ignore ...");
             return null;
         }
     }
@@ -284,6 +285,7 @@ public class MiMTalk {
      * @param currentRPM The current speed
      * @param speedLabel used to update speed
      * @param timeLabel used to update the time label
+     *
      * @return The time in seconds it took to run ramp
      */
     public int rampToRPM(int desiredRPM, float acceleration, int currentRPM,
@@ -292,9 +294,12 @@ public class MiMTalk {
             runRamp = true;
 
             // calculate the time to desired rpm in milliseconds
-            float timeToDesiredRPM = (desiredRPM/acceleration)*1000;
-            System.out.println("Time to Desired RPM: " + timeToDesiredRPM);
-            int timeTotal = 0;
+            int rpmDiff = Math.abs(desiredRPM - currentRPM);
+            float timeToDesiredRPM = (rpmDiff/acceleration)*1000;
+
+            System.out.println("Time to Desired RPM (ms): " + timeToDesiredRPM);
+
+            float timeTotal = 0;
             int cps = 4; // the commands to send per second
             int delayMS = 1000/cps - RESPONSE_DELAY_MS;
             if(delayMS < 0) delayMS = 0;
@@ -302,6 +307,8 @@ public class MiMTalk {
 
             int step = (int)acceleration/cps;
             int startRPM;
+
+            // see if to set the current rpm to the lowest speed the SCK-300 can run at
             if(currentRPM == 0) {
                 startRPM = (step >= 250) ? step : 250;
             } else {
@@ -309,11 +316,10 @@ public class MiMTalk {
             }
 
             for (int i = startRPM; i <= (desiredRPM + step); i += step) {
-                // check to see to continue running the ramp program
+                // check to see if to continue running the ramp program
                 if(!runRamp) break;
 
                 int speed = i;
-
                 if (speed > desiredRPM) {
                     speed = desiredRPM;
                 }
@@ -321,21 +327,22 @@ public class MiMTalk {
                 //System.out.println("Setting Speed " + speed + " index: " + i + " delay: " + delayMS);
                 sendCommand("SetRPM," + speed);
 
+                // update the UI
                 if(speedLabel != null) {
                     String speedString = SCKUtils.zeroPad(speed);
-                    speedLabel.setText(speedString);
+                    speedLabel.setText("*" + speedString) ;
 
-                    String speedTime = SCKUtils.zeroPad(timeTotal/1000);
-                    timeLabel.setText(speedTime);
+                    String speedTime = SCKUtils.zeroPad((int)timeTotal/1000);
+                    timeLabel.setText("*" + speedTime);
                 }
 
                 Thread.sleep(delayMS);
                 timeTotal += delayMS + RESPONSE_DELAY_MS;
             }
 
-            System.out.println("Time Actually Taken: " + timeTotal);
+            System.out.println("Time Actually Taken (ms): " + timeTotal);
 
-            return timeTotal/1000;
+            return (int)timeTotal/1000;
         } catch (InterruptedException e) {
             e.printStackTrace();
             return 0;
