@@ -2,15 +2,15 @@ SCKTalk
 =======
 
 A simple Java program demonstrating controlling the SCK-300 spin coater kits through the serial port, 
-and even over bluetooth from a Windows 10 computer. *Please note that this code is provided for demonstration and 
+and even over bluetooth from a Windows 10/11 computer. ***Please note that this code is provided for demonstration and 
 testing purposes only, and comes with absolutely NO Warranty or Support of any kind. 
-Use at your own risk*.
+Use at your own risk***.
 
 ## Introduction
 Every once in a while someone ask about controlling the SCK-300 kits using a program running on a desktop 
-computer. Now, even though the use cases for this are limited and it probable make more sense to use a 
+computer. Now, even though the use cases for this are limited and it likely makes more sense to use a 
 commercial spin coater with this functionality instead, it's readily doable. All that's required is a USB to 
-UART (TTL), or Bluetooth to UART (TTL) adapter, an understand
+UART (TTL), or Bluetooth to UART (TTL) adapter, an understanding
 of the [SCK Communication API](https://gist.github.com/ns96/ef95fd06573a871adfa1c4bed21eef43) and how to 
 implement it in the programming language of your choice. As a matter of fact, the SCK-300 controller communicates
 with the base module through a serial port, so using a desktop computer instead is a fairly transparent process.
@@ -46,16 +46,16 @@ to it, and the USB end to the SCK-300 unit.
 
 ![SH-H3](SH-H3.jpg)
 
-The USB cable's wire positions will need to be adjusted to match the UART adpaters 
-(green->Tx, white->RX, Red->Vcc, Black->Gnd).
+The USB cable's wire positions will need to be adjusted to match the UART adpater's 
+(green->TX, white->RX, Red->Vcc, Black->Gnd).
 
 ## Installing and Running
 ![SCKTalk](SCKTalk.png)
 
-Inorder to run the SCKTalk application, first install the Java 8 JRE. The Java 11 JRE should work as well, but it hasn't been tested.
+Inorder to run the SCKTalk application (Windows/Linux), first install the Java 8 or above JRE.
 
-1. Download the SCKTalk.jar and place it in a directory of your choice.
-2. Open the terminal program and go to the directory where in the SCKTalk.jar was placed.
+1. Download the SCKTalk.zip, and unzip it in a directory of your choice.
+2. Open the terminal program and go to the SCKTalk directory.
 3. Run the application by typing the following command: java -jar SCKTalk.jar
 4. Once the application is running, select the correct comm port and SCK version from the dropdowns.
 5. Next press the "CONNECT" button. A message in the console area should indicate if connection was successful.
@@ -68,6 +68,6 @@ What makes this code possible is the excellent RX/TX library for reading/writing
 https://github.com/NeuronRobotics/nrjavaserial
 
 There is also some legacy code for using the Bluecove library for reading/writing to serial data over bluetooth directly. 
-However, in Windows 10, this is not needed since the bluetooth adapter looks just like
-another serial port once it's paired. Here is the link to the library: 
+However, in Windows 10/11, this is not needed since the Bluetooth adapter looks just like
+another Serial port once it's paired. Here is the link to this library: 
 https://mvnrepository.com/artifact/io.ultreia/bluecove/2.1.1
