@@ -34,6 +34,10 @@ public class SCKTalkFrame extends JFrame {
 
     private int ticks = 0; // used to keep track of motor run time
 
+    private int acceleration = 500; // the acceleration for the motor
+
+    private int maxTime = 0; // max time to spin coat
+
     public SCKTalkFrame() {
         initComponents();
 
@@ -243,7 +247,8 @@ public class SCKTalkFrame extends JFrame {
                     }
 
                     // update the timer
-                    String timeString = SCKUtils.zeroPad(ticks/2);
+                    int time = ticks/2;
+                    String timeString = SCKUtils.zeroPad(time);
                     spinTimeLabel.setText(timeString);
 
                     // read the rpm and update the speed label
@@ -261,6 +266,13 @@ public class SCKTalkFrame extends JFrame {
                         oldSpeed = currentSpeed;
                     }
 
+                    // if we have a max time value then see if to stop now
+                    if(maxTime != 0 && time > maxTime) {
+                        sckRunning = false;
+                        startStopButton.setSelected(false);
+                        System.out.println("Max Time Exceeded, Stopping ...");
+                    }
+
                     ticks++;
                 }
 
@@ -275,12 +287,13 @@ public class SCKTalkFrame extends JFrame {
         SwingWorker sw1 = new SwingWorker() {
             @Override
             protected String doInBackground() {
-                int acceleration = Integer.parseInt(accTextField.getText());
+                setAccelerationAndMaxTime();
 
                 // ramp to the motor speed in swing worker
                 if (miMTalk.currentMotor == MiMTalk.MotorType.BLDC) {
                     int rampTime = miMTalk.rampToRPM(currentSpeed, acceleration, 0, speedLabel, spinTimeLabel);
-                    ticks = rampTime*2;
+
+                    ticks = rampTime*2; // update this variable so we keep track of time correctly
                 } else {
                     miMTalk.rampStepperToRPM(0, currentSpeed);
                 }
@@ -299,6 +312,25 @@ public class SCKTalkFrame extends JFrame {
     }
 
     /**
+     * Get the acceleration and time
+     * @return
+     */
+    private void setAccelerationAndMaxTime() {
+        try {
+            String valueString = accTextField.getText();
+
+            if(!valueString.contains(",")) {
+                acceleration = Integer.parseInt(valueString);
+                maxTime = 0;
+            } else {
+                String[] sa = valueString.split("[\\s,]+");
+                acceleration = Integer.parseInt(sa[0]);
+                maxTime = Integer.parseInt(sa[1]);
+            }
+        } catch(NumberFormatException nfe) {}
+    }
+
+    /**
      * Run the mim talk driven motor
      */
     private void runTicTalkMotor() {
@@ -307,8 +339,9 @@ public class SCKTalkFrame extends JFrame {
 
         // ramp to the motor speed
         try {
-            int rpmPerSec = Integer.parseInt(accTextField.getText());
-            ticTalk.setAcceleration(rpmPerSec);
+            setAccelerationAndMaxTime();
+
+            ticTalk.setAcceleration(acceleration);
             ticTalk.setRPM(currentSpeed);
         } catch(NumberFormatException nfe) {
             nfe.printStackTrace();
@@ -329,7 +362,8 @@ public class SCKTalkFrame extends JFrame {
                     }
 
                     // update the timer
-                    String timeString = SCKUtils.zeroPad(ticks/2);
+                    int time = ticks/2;
+                    String timeString = SCKUtils.zeroPad(time);
                     spinTimeLabel.setText(timeString);
 
                     // read the rpm and update the speed label
@@ -340,6 +374,13 @@ public class SCKTalkFrame extends JFrame {
                     if(currentSpeed != oldSpeed) {
                         ticTalk.setRPM(currentSpeed);
                         oldSpeed = currentSpeed;
+                    }
+
+                    // if we have a max time value then see if to stop now
+                    if(maxTime != 0 && time > maxTime) {
+                        sckRunning = false;
+                        startStopButton.setSelected(false);
+                        System.out.println("Max Time Exceeded, Stopping ...");
                     }
 
                     ticks++;
@@ -779,7 +820,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.1 (05/16/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.2 (06/07/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
