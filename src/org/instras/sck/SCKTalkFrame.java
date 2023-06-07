@@ -313,7 +313,6 @@ public class SCKTalkFrame extends JFrame {
 
     /**
      * Get the acceleration and time
-     * @return
      */
     private void setAccelerationAndMaxTime() {
         try {
