@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static java.lang.Math.abs;
-
 /**
  * Created with IntelliJ IDEA.
  * User: nathan
@@ -297,7 +295,8 @@ public class MiMTalk {
             int rpmDiff = Math.abs(desiredRPM - currentRPM);
             float timeToDesiredRPM = (rpmDiff/acceleration)*1000;
 
-            System.out.println("Time to Desired RPM (ms): " + timeToDesiredRPM);
+            String message = "Time to Desired RPM (ms): " + (int)timeToDesiredRPM;
+            print("\n" + message);
 
             float timeTotal = 0;
             int cps = 4; // the commands to send per second
@@ -340,7 +339,8 @@ public class MiMTalk {
                 timeTotal += delayMS + RESPONSE_DELAY_MS;
             }
 
-            System.out.println("Time Actually Taken (ms): " + timeTotal);
+            message = "Time Actually Taken (ms): " + (int)timeTotal;
+            print(message + "\n");
 
             return (int)timeTotal/1000;
         } catch (InterruptedException e) {

@@ -235,4 +235,17 @@ public class TicTalk {
         }
         return false;
     }
+
+    /**
+     * Method to print to the sout and the JTextArea console if it's not null
+     *
+     * @param string
+     */
+    public void print(String string) {
+        System.out.println(string);
+
+        if(console != null) {
+            console.append(string + "\n");
+        }
+    }
 }

@@ -100,6 +100,7 @@ public class SCKTalkFrame extends JFrame {
     private void connectToMiM(String portName) {
         miMTalk = new MiMTalk();
         miMTalk.connect(portName);
+        miMTalk.setConsole(consoleTextArea);
 
         String response = miMTalk.getVersion();
 
@@ -123,6 +124,7 @@ public class SCKTalkFrame extends JFrame {
     private void connectToTic(String portName) {
         ticTalk = new TicTalk();
         ticTalk.connect(portName);
+        ticTalk.setConsole(consoleTextArea);
 
         String response = ticTalk.getVersion();
 
@@ -819,7 +821,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.2 (06/07/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/08/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
