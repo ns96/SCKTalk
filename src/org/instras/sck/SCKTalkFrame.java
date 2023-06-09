@@ -7,6 +7,10 @@ package org.instras.sck;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Properties;
 import javax.swing.*;
 import com.jgoodies.forms.factories.*;
 import com.jgoodies.forms.layout.*;
@@ -38,6 +42,10 @@ public class SCKTalkFrame extends JFrame {
 
     private int maxTime = 0; // max time to spin coat
 
+    // store program properties
+    private final String PROPERTIES_FILENAME = "scktalk.properties";
+    private Properties properties = new Properties();
+
     public SCKTalkFrame() {
         initComponents();
 
@@ -51,8 +59,51 @@ public class SCKTalkFrame extends JFrame {
 
         speedTextField.setText("" + currentSpeed);
 
+        // load the program configuration
+        loadProperties();
+
         // read the step sequence
         readSavedStepSequence();
+    }
+
+    /**
+     * Load the default properties
+     */
+    public void loadProperties() {
+        // try loading the properties if it
+        try (FileReader fileReader = new FileReader(PROPERTIES_FILENAME)) {
+            properties.load(fileReader);
+
+            portComboBox.setSelectedItem(properties.getProperty("comm.port"));
+
+            if(properties.getProperty("sck.model").equals("mim")) {
+                mimModelRadioButton.doClick();
+            } else {
+                ticModelRadioButton.doClick();
+            }
+
+            System.out.println("Properties File Loaded ...");
+        } catch (IOException e) {
+            System.out.println("Error Loading Properties File ...");
+        }
+    }
+
+    /**
+     * Save the default properties file
+     */
+    public void saveProperties() {
+        try (FileWriter output = new FileWriter(PROPERTIES_FILENAME)) {
+            String commPort = portComboBox.getSelectedItem().toString();
+            properties.setProperty("comm.port", commPort);
+
+            String sckModel = mimModelRadioButton.isSelected() ? "mim" : "tic";
+            properties.setProperty("sck.model", sckModel);
+
+            properties.store(output, "SCKTalk Defaults");
+            System.out.println("\nSaved Properties ...");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -71,6 +122,9 @@ public class SCKTalkFrame extends JFrame {
 
         // save the step sequence
         saveStepSequence(null);
+
+        // save the properties
+        saveProperties();
 
         System.exit(0);
     }
@@ -332,7 +386,8 @@ public class SCKTalkFrame extends JFrame {
     }
 
     /**
-     * Run the mim talk driven motor
+     * Run the tick talk driven motor.
+     * TO-DO 6/9/2023 correct acceleration factor!
      */
     private void runTicTalkMotor() {
         // now send command to go to the desired speed
@@ -342,8 +397,14 @@ public class SCKTalkFrame extends JFrame {
         try {
             setAccelerationAndMaxTime();
 
-            ticTalk.setAcceleration(acceleration);
+            // correct the acceleration. should be needed!
+            int correctAcc = Math.round(acceleration*0.55f);
+            ticTalk.setAcceleration(correctAcc);
             ticTalk.setRPM(currentSpeed);
+
+            float timeToDesiredRPM = (currentSpeed/acceleration)*1000;
+            String message = "Time to Desired RPM (ms): " + (int)timeToDesiredRPM;
+            consoleTextArea.append("\n" + message + "\n");
         } catch(NumberFormatException nfe) {
             nfe.printStackTrace();
             ticTalk.motorOff();
@@ -354,6 +415,7 @@ public class SCKTalkFrame extends JFrame {
             public void run() {
                 int ticks = 0;
                 int oldSpeed = currentSpeed;
+                boolean ramping = true;
 
                 while(sckRunning) {
                     try {
@@ -363,18 +425,28 @@ public class SCKTalkFrame extends JFrame {
                     }
 
                     // update the timer
-                    int time = ticks/2;
-                    String timeString = SCKUtils.zeroPad(time);
+                    float time = ticks/2;
+                    String timeString = SCKUtils.zeroPad(Math.round(time));
                     spinTimeLabel.setText(timeString);
 
                     // read the rpm and update the speed label
-                    String speedString = SCKUtils.zeroPad(ticTalk.getRPM(roundToValue));
+                    int speed = ticTalk.getRPM(roundToValue);
+                    String speedString = SCKUtils.zeroPad(speed);
                     speedLabel.setText(speedString);
+
+                    // check to see if we reached the desired speed
+                    //System.out.println("Speed/Time " + speed + " / " + time);
+                    if(ramping && (speed == currentSpeed)) {
+                        String message = "Time Actually Taken (ms): " + Math.round(time*1000);
+                        consoleTextArea.append(message + "\n\n");
+                        ramping = false;
+                    }
 
                     // check to make sure we don't have to update the speed
                     if(currentSpeed != oldSpeed) {
                         ticTalk.setRPM(currentSpeed);
                         oldSpeed = currentSpeed;
+                        ramping = true;
                     }
 
                     // if we have a max time value then see if to stop now
@@ -821,7 +893,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/08/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/09/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
