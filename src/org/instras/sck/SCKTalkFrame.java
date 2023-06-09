@@ -397,9 +397,8 @@ public class SCKTalkFrame extends JFrame {
         try {
             setAccelerationAndMaxTime();
 
-            // correct the acceleration. should be needed!
-            int correctAcc = Math.round(acceleration*0.55f);
-            ticTalk.setAcceleration(correctAcc);
+            // set the acceleration
+            ticTalk.setAcceleration(acceleration);
             ticTalk.setRPM(currentSpeed);
 
             float timeToDesiredRPM = (currentSpeed/acceleration)*1000;
@@ -413,7 +412,7 @@ public class SCKTalkFrame extends JFrame {
         // start the thread to update the time and check for new speed settings
         Thread timerThread = new Thread() {
             public void run() {
-                int ticks = 0;
+                int ticks = 6;
                 int oldSpeed = currentSpeed;
                 boolean ramping = true;
 
@@ -425,7 +424,7 @@ public class SCKTalkFrame extends JFrame {
                     }
 
                     // update the timer
-                    float time = ticks/2;
+                    float time = ticks/2.0f;
                     String timeString = SCKUtils.zeroPad(Math.round(time));
                     spinTimeLabel.setText(timeString);
 
@@ -446,7 +445,7 @@ public class SCKTalkFrame extends JFrame {
                     if(currentSpeed != oldSpeed) {
                         ticTalk.setRPM(currentSpeed);
                         oldSpeed = currentSpeed;
-                        ramping = true;
+                        //ramping = true;
                     }
 
                     // if we have a max time value then see if to stop now
