@@ -38,7 +38,7 @@ public class SCKTalkFrame extends JFrame {
 
     private int ticks = 0; // used to keep track of motor run time
 
-    private int acceleration = 500; // the acceleration for the motor
+    private int acceleration = 500; // the default acceleration for the motor
 
     private int maxTime = 0; // max time to spin coat
 
@@ -82,6 +82,15 @@ public class SCKTalkFrame extends JFrame {
                 ticModelRadioButton.doClick();
             }
 
+            String speed = properties.getProperty("set.speed", "3200");
+            speedTextField.setText(speed);
+
+            String acceleration = properties.getProperty("set.acceleration", "800");
+            accTextField.setText(acceleration);
+
+            String increment = properties.getProperty("set.increment", "100");
+            incrementTextField.setText(increment);
+
             System.out.println("Properties File Loaded ...");
         } catch (IOException e) {
             System.out.println("Error Loading Properties File ...");
@@ -98,6 +107,15 @@ public class SCKTalkFrame extends JFrame {
 
             String sckModel = mimModelRadioButton.isSelected() ? "mim" : "tic";
             properties.setProperty("sck.model", sckModel);
+
+            String speed  = speedTextField.getText();
+            properties.setProperty("set.speed", speed);
+
+            String acceleration = accTextField.getText();
+            properties.setProperty("set.acceleration", acceleration);
+
+            String increment = incrementTextField.getText();
+            properties.setProperty("set.increment", increment);
 
             properties.store(output, "SCKTalk Defaults");
             System.out.println("\nSaved Properties ...");
@@ -703,6 +721,7 @@ public class SCKTalkFrame extends JFrame {
                 // reset the labels and start stop button
                 startStopButton.setSelected(false);
                 rampButton.setEnabled(true);
+                speedLabel.setText("00000");
                 spinTimeLabel.setText("00000");
                 rampStepLabel.setText("Ramp Step # 0");
 
@@ -892,7 +911,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/09/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/12/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
