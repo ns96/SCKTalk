@@ -598,7 +598,7 @@ public class SCKTalkFrame extends JFrame {
             public Boolean doInBackground() {
                 sckRunning = true;
 
-                int acceleration = Integer.parseInt(accTextField.getText());
+                setAccelerationAndMaxTime();
 
                 // turn the motor on
                 if(miMTalk != null) {
