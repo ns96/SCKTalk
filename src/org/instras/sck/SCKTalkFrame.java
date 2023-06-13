@@ -76,8 +76,10 @@ public class SCKTalkFrame extends JFrame {
 
             portComboBox.setSelectedItem(properties.getProperty("comm.port"));
 
-            if(properties.getProperty("sck.model").equals("mim")) {
-                mimModelRadioButton.doClick();
+            if(properties.getProperty("sck.model").equals("sck300")) {
+                sck300ModelRadioButton.doClick();
+            } else if(properties.getProperty("sck.model").equals("sck300P")) {
+                sck300PModelRadioButton.doClick();
             } else {
                 ticModelRadioButton.doClick();
             }
@@ -105,7 +107,15 @@ public class SCKTalkFrame extends JFrame {
             String commPort = portComboBox.getSelectedItem().toString();
             properties.setProperty("comm.port", commPort);
 
-            String sckModel = mimModelRadioButton.isSelected() ? "mim" : "tic";
+            String sckModel;
+            if(sck300ModelRadioButton.isSelected()) {
+                sckModel = "sck300";
+            } else if(sck300PModelRadioButton.isSelected()) {
+                sckModel = "sck300P";
+            } else {
+                sckModel = "sck300S";
+            }
+
             properties.setProperty("sck.model", sckModel);
 
             String speed  = speedTextField.getText();
@@ -153,7 +163,7 @@ public class SCKTalkFrame extends JFrame {
 
         try {
             consoleTextArea.setText("Connecting to SCK ...\n");
-            if(mimModelRadioButton.isSelected()) {
+            if(sck300ModelRadioButton.isSelected() || sck300PModelRadioButton.isSelected()) {
                 connectToMiM(portName);
             } else {
                 connectToTic(portName);
@@ -871,7 +881,12 @@ public class SCKTalkFrame extends JFrame {
      * @param e
      */
     private void mimModel(ActionEvent e) {
-        sckComboBox.setSelectedIndex(1);
+        if(sck300ModelRadioButton.isSelected()) {
+            sckComboBox.setSelectedIndex(0);
+        } else {
+            // must be an SCK-300P
+            sckComboBox.setSelectedIndex(1);
+        }
     }
 
     private void initComponents() {
@@ -884,7 +899,8 @@ public class SCKTalkFrame extends JFrame {
         portComboBox = new JComboBox<>();
         closePortButton = new JButton();
         label7 = new JLabel();
-        mimModelRadioButton = new JRadioButton();
+        sck300ModelRadioButton = new JRadioButton();
+        sck300PModelRadioButton = new JRadioButton();
         ticModelRadioButton = new JRadioButton();
         startStopButton = new JToggleButton();
         upButton = new JButton();
@@ -911,7 +927,7 @@ public class SCKTalkFrame extends JFrame {
         exitButton = new JButton();
 
         //======== this ========
-        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/12/2023)");
+        setTitle("SCKTalk [MiM-nano & Tic] v1.2.3 (06/13/2023)");
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -964,16 +980,21 @@ public class SCKTalkFrame extends JFrame {
                 label7.setText("Select Model");
                 contentPanel.add(label7, CC.xy(1, 3));
 
-                //---- mimModelRadioButton ----
-                mimModelRadioButton.setText("SCK 300/P (MiM)");
-                mimModelRadioButton.setSelected(true);
-                mimModelRadioButton.addActionListener(e -> mimModel(e));
-                contentPanel.add(mimModelRadioButton, CC.xywh(3, 3, 3, 1));
+                //---- sck300ModelRadioButton ----
+                sck300ModelRadioButton.setText("SCK-300 (MiM)");
+                sck300ModelRadioButton.addActionListener(e -> mimModel(e));
+                contentPanel.add(sck300ModelRadioButton, CC.xywh(3, 3, 3, 1));
+
+                //---- sck300PModelRadioButton ----
+                sck300PModelRadioButton.setText("SCK-300P (MiM)");
+                sck300PModelRadioButton.setSelected(true);
+                sck300PModelRadioButton.addActionListener(e -> mimModel(e));
+                contentPanel.add(sck300PModelRadioButton, CC.xy(7, 3));
 
                 //---- ticModelRadioButton ----
                 ticModelRadioButton.setText("SCK-300S (Tic)");
                 ticModelRadioButton.addActionListener(e -> ticModel(e));
-                contentPanel.add(ticModelRadioButton, CC.xy(7, 3));
+                contentPanel.add(ticModelRadioButton, CC.xy(9, 3));
 
                 //---- startStopButton ----
                 startStopButton.setText("Start/Stop");
@@ -1104,7 +1125,8 @@ public class SCKTalkFrame extends JFrame {
 
         //---- buttonGroup1 ----
         ButtonGroup buttonGroup1 = new ButtonGroup();
-        buttonGroup1.add(mimModelRadioButton);
+        buttonGroup1.add(sck300ModelRadioButton);
+        buttonGroup1.add(sck300PModelRadioButton);
         buttonGroup1.add(ticModelRadioButton);
         // JFormDesigner - End of component initialization  //GEN-END:initComponents
     }
@@ -1118,7 +1140,8 @@ public class SCKTalkFrame extends JFrame {
     private JComboBox<String> portComboBox;
     private JButton closePortButton;
     private JLabel label7;
-    private JRadioButton mimModelRadioButton;
+    private JRadioButton sck300ModelRadioButton;
+    private JRadioButton sck300PModelRadioButton;
     private JRadioButton ticModelRadioButton;
     private JToggleButton startStopButton;
     private JButton upButton;

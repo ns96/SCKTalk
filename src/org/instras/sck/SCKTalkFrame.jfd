@@ -5,7 +5,7 @@ new FormModel {
 	root: new FormRoot {
 		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class java.awt.BorderLayout ) ) {
 			name: "this"
-			"title": "SCKTalk [MiM-nano & Tic] v1.2.3 (06/12/2023)"
+			"title": "SCKTalk [MiM-nano & Tic] v1.2.3 (06/13/2023)"
 			"defaultCloseOperation": 2
 			addEvent( new FormEvent( "java.awt.event.WindowListener", "windowClosed", "thisWindowClosed", true ) )
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.BorderLayout ) ) {
@@ -64,9 +64,8 @@ new FormModel {
 						"gridY": 3
 					} )
 					add( new FormComponent( "javax.swing.JRadioButton" ) {
-						name: "mimModelRadioButton"
-						"text": "SCK 300/P (MiM)"
-						"selected": true
+						name: "sck300ModelRadioButton"
+						"text": "SCK-300 (MiM)"
 						"$buttonGroup": new FormReference( "buttonGroup1" )
 						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "mimModel", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
@@ -75,12 +74,22 @@ new FormModel {
 						"gridWidth": 3
 					} )
 					add( new FormComponent( "javax.swing.JRadioButton" ) {
+						name: "sck300PModelRadioButton"
+						"text": "SCK-300P (MiM)"
+						"selected": true
+						"$buttonGroup": new FormReference( "buttonGroup1" )
+						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "mimModel", true ) )
+					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
+						"gridX": 7
+						"gridY": 3
+					} )
+					add( new FormComponent( "javax.swing.JRadioButton" ) {
 						name: "ticModelRadioButton"
 						"text": "SCK-300S (Tic)"
 						"$buttonGroup": new FormReference( "buttonGroup1" )
 						addEvent( new FormEvent( "java.awt.event.ActionListener", "actionPerformed", "ticModel", true ) )
 					}, new FormLayoutConstraints( class com.jgoodies.forms.layout.CellConstraints ) {
-						"gridX": 7
+						"gridX": 9
 						"gridY": 3
 					} )
 					add( new FormComponent( "javax.swing.JToggleButton" ) {
