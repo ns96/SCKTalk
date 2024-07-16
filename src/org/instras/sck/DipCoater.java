@@ -496,7 +496,6 @@ public class DipCoater extends JFrame {
         backButton = new JButton();
         connButton = new JButton();
         exitButton = new JButton();
-        CellConstraints cc = new CellConstraints();
 
         //======== this ========
         setTitle("Dip Coater Controller 1.1 (02/01/2016)");
@@ -517,7 +516,7 @@ public class DipCoater extends JFrame {
             //======== contentPanel ========
             {
                 contentPanel.setLayout(new FormLayout(
-                    "default:grow, max(default;5dlu), default:grow",
+                    "default:grow, [5dlu,default], default:grow",
                     "default"));
 
                 //======== scrollPane1 ========
@@ -525,66 +524,46 @@ public class DipCoater extends JFrame {
 
                     //---- consoleTextArea ----
                     consoleTextArea.setRows(6);
-                    consoleTextArea.setFont(new Font("Monospaced", Font.BOLD, 24));
+                    consoleTextArea.setFont(new Font(Font.MONOSPACED, Font.BOLD, 24));
                     consoleTextArea.setText("DCOAT CONTROL\n\nSPEED\t000 MM/MIN\nTRAVEL\t+00 MM\t\nTIME\t0000 S\nMODE\tMANUAL");
                     scrollPane1.setViewportView(consoleTextArea);
                 }
-                contentPanel.add(scrollPane1, cc.xy(1, 1));
+                contentPanel.add(scrollPane1, CC.xy(1, 1));
 
                 //======== panel1 ========
                 {
                     panel1.setLayout(new FormLayout(
-                        ColumnSpec.decodeSpecs("default:grow"),
-                        new RowSpec[] {
-                            new RowSpec(RowSpec.FILL, Sizes.DEFAULT, FormSpec.DEFAULT_GROW),
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            FormFactory.DEFAULT_ROWSPEC,
-                            FormFactory.LINE_GAP_ROWSPEC,
-                            new RowSpec(RowSpec.FILL, Sizes.DEFAULT, FormSpec.NO_GROW)
-                        }));
+                        "default:grow",
+                        "fill:default:grow, 3*($lgap, default), $lgap, fill:default"));
 
                     //---- speedSpinner ----
                     speedSpinner.setFont(new Font("Tahoma", Font.BOLD, 18));
                     speedSpinner.setModel(new SpinnerNumberModel(0, 0, 200, 10));
-                    speedSpinner.addChangeListener(new ChangeListener() {
-                        @Override
-                        public void stateChanged(ChangeEvent e) {
-                            speedSpinnerStateChanged();
-                        }
-                    });
-                    panel1.add(speedSpinner, cc.xy(1, 1));
+                    speedSpinner.addChangeListener(e -> speedSpinnerStateChanged());
+                    panel1.add(speedSpinner, CC.xy(1, 1));
 
                     //---- moveTimeTextField ----
                     moveTimeTextField.setText("move time (s)");
                     moveTimeTextField.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    moveTimeTextField.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            moveTimeTextFieldActionPerformed();
-                        }
-                    });
-                    panel1.add(moveTimeTextField, cc.xy(1, 3));
+                    moveTimeTextField.addActionListener(e -> moveTimeTextFieldActionPerformed());
+                    panel1.add(moveTimeTextField, CC.xy(1, 3));
 
                     //---- moveTimeLabel ----
                     moveTimeLabel.setText("moveTime");
-                    moveTimeLabel.setForeground(new Color(255, 51, 51));
-                    panel1.add(moveTimeLabel, cc.xy(1, 5));
+                    moveTimeLabel.setForeground(new Color(0xff3333));
+                    panel1.add(moveTimeLabel, CC.xy(1, 5));
 
                     //---- speedLabel2 ----
                     speedLabel2.setText("0 rpm");
                     speedLabel2.setFont(new Font("Tahoma", Font.BOLD, 12));
-                    panel1.add(speedLabel2, cc.xy(1, 7));
+                    panel1.add(speedLabel2, CC.xy(1, 7));
 
                     //---- testModeCheckBox ----
                     testModeCheckBox.setText("Test Mode");
                     testModeCheckBox.setSelected(true);
-                    panel1.add(testModeCheckBox, cc.xy(1, 9));
+                    panel1.add(testModeCheckBox, CC.xy(1, 9));
                 }
-                contentPanel.add(panel1, cc.xy(3, 1, CellConstraints.DEFAULT, CellConstraints.FILL));
+                contentPanel.add(panel1, CC.xy(3, 1, CC.DEFAULT, CC.FILL));
             }
             dialogPane.add(contentPanel, BorderLayout.CENTER);
 
@@ -592,72 +571,42 @@ public class DipCoater extends JFrame {
             {
                 buttonBar.setBorder(Borders.createEmptyBorder("5dlu, 0dlu, 0dlu, 0dlu"));
                 buttonBar.setLayout(new FormLayout(
-                    "default:grow, default:grow, default:grow, default:grow, default:grow, default:grow",
+                    "6*(default:grow)",
                     "default:grow"));
 
                 //---- enterButton ----
                 enterButton.setText("ENTER");
                 enterButton.setEnabled(false);
-                enterButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        enterButtonActionPerformed();
-                    }
-                });
-                buttonBar.add(enterButton, cc.xy(1, 1));
+                enterButton.addActionListener(e -> enterButtonActionPerformed());
+                buttonBar.add(enterButton, CC.xy(1, 1));
 
                 //---- upButton ----
                 upButton.setText("UP");
                 upButton.setEnabled(false);
-                upButton.addChangeListener(new ChangeListener() {
-                    @Override
-                    public void stateChanged(ChangeEvent e) {
-                        upButtonStateChanged();
-                    }
-                });
-                buttonBar.add(upButton, cc.xy(2, 1));
+                upButton.addChangeListener(e -> upButtonStateChanged());
+                buttonBar.add(upButton, CC.xy(2, 1));
 
                 //---- downButton ----
                 downButton.setText("DOWN");
                 downButton.setEnabled(false);
-                downButton.addChangeListener(new ChangeListener() {
-                    @Override
-                    public void stateChanged(ChangeEvent e) {
-                        downButtonStateChanged();
-                    }
-                });
-                buttonBar.add(downButton, cc.xy(3, 1));
+                downButton.addChangeListener(e -> downButtonStateChanged());
+                buttonBar.add(downButton, CC.xy(3, 1));
 
                 //---- backButton ----
                 backButton.setText("BACK");
                 backButton.setEnabled(false);
-                backButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        backButtonActionPerformed();
-                    }
-                });
-                buttonBar.add(backButton, cc.xy(4, 1));
+                backButton.addActionListener(e -> backButtonActionPerformed());
+                buttonBar.add(backButton, CC.xy(4, 1));
 
                 //---- connButton ----
                 connButton.setText("CONN");
-                connButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        connButtonActionPerformed();
-                    }
-                });
-                buttonBar.add(connButton, cc.xy(5, 1));
+                connButton.addActionListener(e -> connButtonActionPerformed());
+                buttonBar.add(connButton, CC.xy(5, 1));
 
                 //---- exitButton ----
                 exitButton.setText("EXIT");
-                exitButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        exitButtonActionPerformed();
-                    }
-                });
-                buttonBar.add(exitButton, cc.xy(6, 1));
+                exitButton.addActionListener(e -> exitButtonActionPerformed());
+                buttonBar.add(exitButton, CC.xy(6, 1));
             }
             dialogPane.add(buttonBar, BorderLayout.SOUTH);
         }

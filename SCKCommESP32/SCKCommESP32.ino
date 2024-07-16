@@ -1,11 +1,34 @@
 /**
  * Sketch to echo usb to serial 1 and usb to connect to SCK-300 and TIC based SCK-300S
  * based boards. Essentially acts as an alternative to a USB TTL converter by making use
- * on an arduino board, in this case the DFRobot beetle (https://www.dfrobot.com/product-1075.html)
+ * on an arduino board, in this case the ACEBOTT ESP32 Max V1.0
+ * https://www.acebott.com/products/acebott-qa008-esp32-max-v1-0-with-1m-type-c-cable
+ * https://forum.arduino.cc/t/bluetooth-classic-and-ble-in-esp32-wroom/891594/10
+ * https://quadmeup.com/arduino-esp32-and-3-hardware-serial-ports/
+ * 
+ * Select Board ESP32-WROOM-DA Module
  */
 #include <Tic.h>
+#include "BluetoothSerial.h"
 
-TicSerial tic(Serial1);
+String device_name = "SCKCommESP32";
+
+// Check if Bluetooth is available
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+// Check Serial Port Profile
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Port Profile for Bluetooth is not available or not enabled. It is only available for the ESP32 chip.
+#endif
+
+BluetoothSerial SerialBT;
+
+
+#define LED_BUILTIN 2
+
+TicSerial tic(Serial);
 
 bool ticSCK = false;
 bool mimSCK = false;
@@ -21,15 +44,17 @@ uint32_t clksPrev = 0; // the previous clock speed
 
 void setup() {
   Serial.begin(19200);
-  Serial1.begin(19200);  
+  SerialBT.begin(device_name);  
 
   pinMode(LED_BUILTIN, OUTPUT);
+
+  SerialBT.printf("The device with name \"%s\" is started.\nNow you can pair it with Bluetooth!\n", device_name.c_str());
 }
 
 void loop() {
-  if (Serial.available()) {      // If anything comes in Serial (USB),
+  if (SerialBT.available()) {      // If anything comes in Serial (USB),
     if(ticSCK) {
-      String svalue = Serial.readStringUntil('\r\n');
+      String svalue = SerialBT.readStringUntil('\r\n');
       svalue.trim();
 
       if(svalue.length() > 2) {
@@ -46,36 +71,36 @@ void loop() {
         if(svalue.equals("x")) {
           ticSCK = false;
           blink = true;
-          Serial.println("TIC MODE DISCONNECT...");
+          SerialBT.println("TIC MODE DISCONNECT...");
         }
       }
     } else {
-      char incomingByte = Serial.read();
+      char incomingByte = SerialBT.read();
       if(incomingByte == 'x') {
         ticSCK = true;
         blink = false;
         initTIC();
         digitalWrite(LED_BUILTIN, HIGH); // turn on led and leave it on
-        Serial.println("TIC SCK-300S MODE ...");
+        SerialBT.println("TIC SCK-300S MODE ...");
       } else if(incomingByte == 'y') {
         if(!mimSCK) {
           blink = false;
           digitalWrite(LED_BUILTIN, HIGH); // turn on led and leave it on
-          Serial.println("MIM SCK-300[P] MODE ...");
+          SerialBT.println("MIM SCK-300[P] MODE ...");
           mimSCK = true;
         } else {
           blink = true;
           mimSCK = false;
         }
       } else {
-        Serial1.write(incomingByte);   // read it and send it out Serial1 (pins 0 & 1)
+        Serial.write(incomingByte);   // read it and send it out Serial (pins 0 & 1)
       }
     }
   }
 
-  if (Serial1.available()) {     // If anything comes in Serial1 (pins 0 & 1)
-    char incomingByte = Serial1.read();
-    Serial.write(incomingByte);   // read it and send it out Serial (USB)
+  if (Serial.available()) {     // If anything comes in Serial (pins 0 & 1)
+    char incomingByte = Serial.read();
+    SerialBT.write(incomingByte);   // read it and send it out SerialBT
   }
 
   // blink the led fast if we not in SCK-300S TIC mode
@@ -107,9 +132,9 @@ void runCommand(String cmd, String value) {
 
   if(cmd.equals("GetVersion")) { // check board connection
     if(checkBoardConnected() == 0) {
-      Serial.println("TIC_SCK v1.0.1");
+      SerialBT.println("TIC_SCK v1.0.1");
     } else {
-      Serial.println("ERROR, NO TIC Board Fond ...");
+      SerialBT.println("ERROR, NO TIC Board Fond ...");
     }
   } else if(cmd.equals("SetMicro")) { // set the excitation
     microStep = value.toInt();
@@ -126,7 +151,7 @@ void runCommand(String cmd, String value) {
   } else if(cmd.equals("GetRPM")) { // set the steps per revolution
     int round = value.toInt();
     int rpm = StepperClksToRpm(round);
-    Serial.println(rpm);
+    SerialBT.println(rpm);
   } else if(cmd.equals("SetACC")) { // set the steps per revolution
     int rpm = value.toInt();
     setAcceleration(rpm);

@@ -13,7 +13,7 @@ import java.io.IOException;
  * Date: 1/5/2023
  * Time: 9:00 AM
  *
- * Simple class for connecting tp the new SCK-300S which make use of the Tic T249 control board
+ * Simple class for connecting to the new SCK-300S which make use of the Tic T249 control board
  */
 
 public class TicTalk {
