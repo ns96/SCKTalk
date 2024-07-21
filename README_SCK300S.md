@@ -11,11 +11,7 @@ Unlike the SCK-300/SCK-300P models the SCK-300S requires some additional effort 
 
 Inorder to connect a PC to the SCK-300S units, an Arduino board and a [USB A male to dupont header cable](https://www.amazon.com/gp/product/B06Y5RKMT8?th=1) are needed.  Depending on the Arduino board used some cutting of wires and soldering needs to be done and of course knowledge of how to program Arduino devices is needed.  As such, this a project suited for someone who already has such experties.
 
-  
-
 ![SCK-UART](Arduino_Boards.png)
-
-
 
 ##### Wired Connection
 
@@ -44,8 +40,8 @@ Inorder to run the SCKTalk application (Windows/Linux), first install the [Java 
 5. Next press the "CONNECT" button. A message in the console area should indicate if connection was successful. Also, the blinking LED on the Arduino board should remain on.
 6. Once connected type in the desired speed, then press the "Start/Stop" button to start motor.
 7. Press the "Start/Stop" button again to stop the motor.
-   
-   
+
+Checkout the [YouTube Video]([SCK 300S Spin Coater PC Connectivity - YouTube](https://youtu.be/YuBDu55Y0zg))
 
 ## Serial and Bluetooth Library
 
