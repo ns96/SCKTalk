@@ -11,8 +11,6 @@ Every once in a while someone ask about controlling the SCK-300 kits using a pro
 
 Inorder to connect a PC to the SCK-300 units, a USB to UART adapter and USB A male to dupont header cable are needed.  Using this combination of adapters and cable means no cutting of wires or soldering needs to be done.  
 
-
-
 ![SCK-UART](SCK-UART.jpg)
 
 So far, the following USB-UART and Bluetooth-UART adapters have shown to work when combined with this [USB Male A/Dupont Header Cable](https://www.amazon.com/gp/product/B06Y5RKMT8). If using a SCK-300 version 1 unit then this [USB Male Mini/Dupont Header Cable](https://www.amazon.com/CGTime-Female-header-motherboard-cable/dp/B01NA7O23N) can be used.
@@ -21,8 +19,6 @@ So far, the following USB-UART and Bluetooth-UART adapters have shown to work wh
 
 For a wired connection, the [DSD TECH SH-U09C2 USB to TTL Adapter](https://www.amazon.com/gp/product/B07TXVRQ7V) can be used. All that's necessary is to change the TTL level to 5V (SCK-300 version 2) or 3.3V (SCK-300 version 1) and connect the dupont header end of the USB Male A cable to it. Next connect the USB end of the cable to the SCK-300 unit then the adapter to the computers USB port.
 
-
-
 ![DSD Tech USB-TTL](SH-USB-TTL.jpg)
 
 The USB cable's wire positions will need to be adjusted to match the UART adpaters 
@@ -30,9 +26,7 @@ The USB cable's wire positions will need to be adjusted to match the UART adpate
 
 ##### Wireless Bluetooth Connection
 
-For a wireless connection, the [SH-H3 Bluetooth Dual Mode Module](https://www.amazon.com/gp/product/B072LX3VG1) or  [HC-06 Wireless Bluetooth Serial module](https://www.amazon.com/DSD-TECH-Wireless-Bluetooth-Transceiver/dp/B01FCQZ8VW) can be used. All that's necessary is to change default baud rate to 19,200 and pair the device to the PC using PIN code 1234 or 0000. Once these steps are done connect the dupont header end of the USB Male A cable to Bluetooth module, and the USB end to the SCK-300/P unit.
-
-
+For a wireless connection, the [SH-H3 Bluetooth Dual Mode Module](https://www.amazon.com/gp/product/B072LX3VG1) or  [HC-06 Wireless Bluetooth Serial module](https://www.amazon.com/DSD-TECH-Wireless-Bluetooth-Transceiver/dp/B01FCQZ8VW) can be used. All that's necessary is to change default baud rate to 19,200 and pair the device to the PC using PIN code 1234 or 0000. Once these steps are done connect the dupont header end of the USB Male A cable to Bluetooth module, and the USB end to the SCK-300/P unit.  Also see how to connect Bluetooth module to a [Windows 11 computer](https://support.microsoft.com/en-us/windows/pair-a-bluetooth-device-in-windows-2be7b51f-6ae9-b757-a3b9-95ee40c3e242).
 
 ![SH-H3](SH-H3.jpg)
 
@@ -45,7 +39,7 @@ The USB cable's wire positions will need to be adjusted to match the UART adpate
 
 Inorder to run the SCKTalk application (Windows/Linux), first install the [Java 8 or above JRE](https://www.java.com/en/download/).
 
-1. Download the SCKTalk.zip, and unzip it in a directory of your choice.
+1. Download the most recent [SCKTalk.zip](https://github.com/ns96/SCKTalk/releases) release, and unzip it in a directory of your choice.
 2. Open the terminal program and go to the SCKTalk directory.
 3. Run the application by typing the following command: java -jar SCKTalk.jar
 4. Once the application is running, select the correct comm port and SCK version from the dropdowns.
