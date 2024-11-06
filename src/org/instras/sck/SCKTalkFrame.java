@@ -318,7 +318,7 @@ public class SCKTalkFrame extends JFrame {
         // now send command to go to the desired speed
         miMTalk.motorOn();
 
-        // crete a timer thread to update the time and check for new speed settings
+        // create a timer thread to update the time and check for new speed settings
         Thread timerThread = new Thread() {
             public void run() {
                 int oldSpeed = currentSpeed;
