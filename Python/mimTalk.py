@@ -162,11 +162,17 @@ if __name__ == "__main__":
         mim_talk.set_motor_parameters()
         mim_talk.motor_on()
 
-        for i in range(0, 1001, 50):
+        for i in range(0, 101):
             if i == 0:
                 print("Step\tRPM")
                 mim_talk.send_command("SetRPM,1200")
+
+            if i == 50:
+                mim_talk.send_command("SetRPM,3200")    
+            
+            # pause 2 seconds before measuring rpm
             time.sleep(2)
+            
             rpm = mim_talk.send_command("GetRPM")
             rpm = mim_talk.get_response_value(rpm)
             print(f"{i}\t{rpm}")
