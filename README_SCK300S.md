@@ -5,11 +5,11 @@ A brief overview of using a simple Java program to control the SCK-300S spin coa
 
 ## Introduction
 
-Unlike the SCK-300/SCK-300P models the SCK-300S requires some additional effort to control via desktop computers. Where as the SCK-300/SCK-300P use a standard Arduino MCU with our [custom firmware]([GitHub - ns96/MiM at MiM_nano](https://github.com/ns96/MiM/tree/MiM_nano)), the SCK-300S models make use of the excellent high speed stepper drive from Pololu, the [TIC 249]([Pololu - Tic T249 USB Multi-Interface Stepper Motor Controller (Connectors Soldered)](https://www.pololu.com/product/3138)). As such, getting it to work the SCKTalk program requires the use of an addtional Arduino MCU to act as both the USB to UART (TTL), or Bluetooth to UART (TTL) adapter, and a command translator.  Command translation is required to convert the [SCK Communication API](https://gist.github.com/ns96/ef95fd06573a871adfa1c4bed21eef43) calls, to [commands]([Pololu - Tic Stepper Motor Controller User’s Guide](https://www.pololu.com/docs/0J71)) used by the TIC 249.
+Unlike the SCK-300/SCK-300P models the SCK-300S requires some additional effort to control via desktop computers. Whereas the SCK-300/SCK-300P use a standard Arduino MCU with our [custom firmware]([GitHub - ns96/MiM at MiM_nano](https://github.com/ns96/MiM/tree/MiM_nano)), the SCK-300S models make use of the excellent high speed stepper drive from Pololu, the [TIC 249]([Pololu - Tic T249 USB Multi-Interface Stepper Motor Controller (Connectors Soldered)](https://www.pololu.com/product/3138)). As such, getting it to work the SCKTalk program requires the use of an additional Arduino MCU to act as both the USB to UART (TTL), or Bluetooth to UART (TTL) adapter, and a command translator.  Command translation is required to convert the [SCK Communication API](https://gist.github.com/ns96/ef95fd06573a871adfa1c4bed21eef43) calls, to [commands]([Pololu - Tic Stepper Motor Controller User’s Guide](https://www.pololu.com/docs/0J71)) used by the TIC 249.
 
 ## Hardware
 
-Inorder to connect a PC to the SCK-300S units, an Arduino board and a [USB A male to dupont header cable](https://www.amazon.com/gp/product/B06Y5RKMT8?th=1) are needed.  Depending on the Arduino board used some cutting of wires and soldering needs to be done and of course knowledge of how to program Arduino devices is needed.  As such, this a project suited for someone who already has such experties.
+Inorder to connect a PC to the SCK-300S units, an Arduino board and a [USB A male to dupont header cable](https://www.amazon.com/gp/product/B06Y5RKMT8?th=1) are needed.  Depending on the Arduino board used some cutting of wires and soldering needs to be done and of course knowledge of how to program Arduino devices is needed.  As such, this a project suited for someone who already has such expertise.
 
 ![SCK-UART](Arduino_Boards.png)
 
@@ -23,9 +23,15 @@ Once the USB-A cable has been connected and sketch loaded then all that's needed
 
 ##### Wireless Bluetooth Connection
 
-For a wireless connection, an [AceBott ESP32 Board](https://a.co/d/4wHfQw6) was used due toit's support for Bluetooth classic and RXTX header.  Once the proper [Sketch](SCKCommESP32/SCKCommESP32.ino) has been loaded, connect the ESP32 board to the SCK-300S unit using the USB-A cable. Next power on the SCK-300S and pair the ESP32 board to the PC (device name is SCKCommESP32) over Bluetooth. Once paired, take note of the assigned comm port.
+For a wireless connection, an [AceBott ESP32 Board](https://a.co/d/4wHfQw6) was used due to it's support for Bluetooth classic and RX/TX pin header.  Once the proper [Sketch](SCKCommESP32/SCKCommESP32.ino) has been loaded, connect the ESP32 board to the SCK-300S unit using the USB-A cable. Next power on the SCK-300S and pair the ESP32 board to the PC (device name is SCKCommESP32) over Bluetooth. Once paired, take note of the assigned comm port.
 
 ![](AceBottESP32.jpg)
+
+##### Wireless Bluetooth and Web Interface
+
+An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395). Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using the USB-A cable. Next power on the SCK-300S and pair the board to the PC (device name is SCKCommQTPY) over Bluetooth. Once paired, take note of the assigned comm port.
+
+![QTPY + USB-A](QTPY_01.png)
 
 ## Installing and Running
 
@@ -36,7 +42,7 @@ Inorder to run the SCKTalk application (Windows/Linux), first install the [Java 
 1. Download the SCKTalk.zip, and unzip it in a directory of your choice.
 2. Open the terminal program and go to the SCKTalk directory.
 3. Run the application by typing the following command: java -jar SCKTalk.jar
-4. Once the application is running, select the correct comm port for the Arduino device from the dropdown and SCK-300S version radion button.
+4. Once the application is running, select the correct comm port for the Arduino device from the dropdown and the "**SCK-300S (Tic)**" version radio button.
 5. Next press the "CONNECT" button. A message in the console area should indicate if connection was successful. Also, the blinking LED on the Arduino board should remain on.
 6. Once connected type in the desired speed, then press the "Start/Stop" button to start motor.
 7. Press the "Start/Stop" button again to stop the motor.

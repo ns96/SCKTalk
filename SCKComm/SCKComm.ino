@@ -109,28 +109,28 @@ void runCommand(String cmd, String value) {
     if(checkBoardConnected() == 0) {
       Serial.println("TIC_SCK v1.0.1");
     } else {
-      Serial.println("ERROR, NO TIC Board Fond ...");
+      Serial.println("ERROR, NO TIC Board Found ...");
     }
   } else if(cmd.equals("SetMicro")) { // set the excitation
     microStep = value.toInt();
     setMicroStep(microStep);
   } else if(cmd.equals("SetSPR")) { // set the steps per revolution
     stepsPerRev = value.toInt();
-  } else if(cmd.equals("SetMaxRPM")) { // set the steps per revolution
+  } else if(cmd.equals("SetMaxRPM")) { // set the max speed in RPM
     maxRPM = value.toInt();
     clksMax = (uint32_t)(maxRPM * stepsPerRev * microStep / 60.0);
-  } else if(cmd.equals("SetRPM")) { // set the steps per revolution
+  } else if(cmd.equals("SetRPM")) { // set the speed in RPM
     int rpm = value.toInt();
     uint32_t clks = StepperRpmToClks(rpm);
     stepSetFreqRamp(clks);
-  } else if(cmd.equals("GetRPM")) { // set the steps per revolution
+  } else if(cmd.equals("GetRPM")) { // get the speed in RPMs
     int round = value.toInt();
     int rpm = StepperClksToRpm(round);
     Serial.println(rpm);
-  } else if(cmd.equals("SetACC")) { // set the steps per revolution
+  } else if(cmd.equals("SetACC")) { // set the acceleration
     int rpm = value.toInt();
     setAcceleration(rpm);
-  } else if(cmd.equals("SetDIR")) { // set the direction
+  } else if(cmd.equals("SetDIR")) { // set the direction of spin
     int dir = value.toInt();
     if(dir == 0) {
       moveUp = true; // clockwise
