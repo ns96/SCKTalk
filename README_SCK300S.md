@@ -1,7 +1,7 @@
 SCKTalk and the SCK-300S
 =======
 
-A brief overview of using a simple Java program to control the SCK-300S spin coater kit through the USB/serial port, and over Bluetooth from a Windows 10/11 computer. ***Please note that this code is provided for demonstration and testing purposes only, and comes with absolutely NO Warranty, or Support of any kind. Use at your own risk***.
+A brief overview of using a simple Java program to control the SCK-300S spin coater kit through the USB/serial port, and over Bluetooth from a Windows 10/11 computer. ***Please note that this software code is provided for demonstration and testing purposes only, and comes with absolutely NO Warranty, or Support of any kind. Use at your own risk***.
 
 ## Introduction
 
@@ -29,7 +29,7 @@ For a wireless connection, an [AceBott ESP32 Board](https://a.co/d/4wHfQw6) was 
 
 ##### Wireless Bluetooth and Web Interface
 
-An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395) (*Must be ESP32 Pico MCU, not ESP32-S2/S3/C3 etc, since those other MCUs do not support Bluetooth classic aka SPP*).  Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using the USB-A cable. The red/black cables go to the +/- battery pads, green goes to  the TX pin and white goes to the RX/pin.  Next power on the SCK-300S and pair the board to the PC (device name is SCKCommQTPY) over Bluetooth from PC. Once paired, take note of the assigned comm port.
+An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395) (*Must be ESP32 Pico MCU, not ESP32-S2/S3/C3 etc, since those other MCUs do not support Bluetooth classic aka SPP*).  Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using a USB-A cable. The Red/Black cables go to the +/- battery pads, Green goes to  the TX pin and White goes to the RX/pin.  Next power on the SCK-300S and pair the board to the PC (device name is **SCKCommQTPY**) over Bluetooth from a PC. Once paired, take note of the assigned comm port.
 
 ![QTPY + USB-A](QTPY_01.png)
 

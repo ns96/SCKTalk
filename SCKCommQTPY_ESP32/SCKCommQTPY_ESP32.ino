@@ -22,7 +22,7 @@
 // variables to see if use wifi network or setup as AP. 
 // uncommnent to use existing WiFi network and enter proper credentials in the arduino_secrets.h file
 // usefull when developing on home network, but should be commented out for production
-//#define USE_NETWORK
+#define USE_NETWORK
 
 String device_name = "SCKCommQTPY";
 
