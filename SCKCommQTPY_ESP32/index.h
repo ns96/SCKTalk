@@ -99,7 +99,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
   <script>
     // define the current model
-    var currentModel = "SCK-300S";
+    var currentModel = "";
     var accelerating = false;
 
     // Define the valid speed ranges for each model
@@ -175,6 +175,12 @@ const char index_html[] PROGMEM = R"rawliteral(
     }
 
     function startMotor(){
+      // check that the model has been set otherwise show an alert
+      if (currentModel === "") {
+        alert("Please Select a Model First");
+        return;
+      }
+
       fetch("/start");
 
       // start interval to get the current speed every second
