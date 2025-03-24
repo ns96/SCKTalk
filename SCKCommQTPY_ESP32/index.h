@@ -203,8 +203,11 @@ const char index_html[] PROGMEM = R"rawliteral(
       clearInterval(speedInterval);
       clearInterval(timerInterval);
 
-      document.getElementById("currentSpeed").innerText = "0 RPM";
-      document.getElementById("timeRunning").innerText = "0 Seconds";
+      // delay 0.5 seconds to allow last reading to come from backend
+      setTimeout(() => {
+        document.getElementById("currentSpeed").innerText = "0 RPM";
+        document.getElementById("timeRunning").innerText = "0 Seconds";
+      }, 500);
     }
 
     function getCurrentSpeed(){
