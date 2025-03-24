@@ -29,9 +29,13 @@ For a wireless connection, an [AceBott ESP32 Board](https://a.co/d/4wHfQw6) was 
 
 ##### Wireless Bluetooth and Web Interface
 
-An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395). Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using the USB-A cable. Next power on the SCK-300S and pair the board to the PC (device name is SCKCommQTPY) over Bluetooth. Once paired, take note of the assigned comm port.
+An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395) (*Must be ESP32 Pico MCU, not ESP32-S2/S3/C3 etc, since those other MCUs do not support Bluetooth classic aka SPP*).  Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using the USB-A cable. The red/black cables go to the +/- battery pads, green goes to  the TX pin and white goes to the RX/pin.  Next power on the SCK-300S and pair the board to the PC (device name is SCKCommQTPY) over Bluetooth from PC. Once paired, take note of the assigned comm port.
 
 ![QTPY + USB-A](QTPY_01.png)
+
+To access the web interface, which provides a basic control UI (User Interface), first connect to the device's WiFi Access Point named "SCKCommQTPY" using password "12345678" (no quotes) then navigate to 192.168.4.1 in your browser.
+
+<img src="QTPY_02.png" title="" alt="" data-align="center">
 
 ## Installing and Running
 
@@ -49,6 +53,6 @@ Inorder to run the SCKTalk application (Windows/Linux), first install the [Java 
 
 Checkout the [YouTube Video]([SCK 300S Spin Coater PC Connectivity - YouTube](https://youtu.be/YuBDu55Y0zg))
 
-## Serial and Bluetooth Library
+## Java Serial Library
 
 What makes this code possible is the excellent RX/TX library for reading/writing to Serial port: https://github.com/NeuronRobotics/nrjavaserial

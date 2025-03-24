@@ -19,8 +19,10 @@
 #include "index.h" // stores the web interface html/javascript page
 #include "arduino_secrets.h" // stores the wifi credentials for the home network
 
-// variables to see if use wifi network or setup as AP
-#define USE_NETWORK
+// variables to see if use wifi network or setup as AP. 
+// uncommnent to use existing WiFi network and enter proper credentials in the arduino_secrets.h file
+// usefull when developing on home network, but should be commented out for production
+//#define USE_NETWORK
 
 String device_name = "SCKCommQTPY";
 
@@ -64,14 +66,29 @@ bool ticInitiated = false;
 bool mimSCK = false;
 bool blink = true;
 uint32_t microStep = 4;
-uint32_t motorAcc = 800; // 800 rpms per sec
+uint32_t motorAcc = 500; // default 500 rpms/sec
 uint32_t stepsPerRev = 96;
 uint32_t maxRPM = 6000;
-uint32_t currentRPM = 9999;
+uint32_t currentRPM = 0;
 uint32_t velocity = 0;
 bool moveUp = true; // move clockwise
 uint32_t clksMax = (uint32_t)(maxRPM * stepsPerRev * microStep / 60.0);
 uint32_t clksPrev = 0; // the previous clock speed
+
+// variables to store desired speed of SCK-300P
+uint32_t desiredRPM = 0;
+
+// variable to store string returned from the MySerial1 connection to the SCK-300P/SCK-300S
+String sckResponse = "";
+
+// variable to hold the latest sck command
+String sckCommand = "";
+
+// variable to keep track if sck300p motor is running already
+bool motorRunning = false;
+
+// variable to keep track if the motor is accelerating
+bool motorAccelerating = false;
 
 void setup() {
   Serial.begin(19200);
@@ -167,11 +184,24 @@ void loop() {
   if (client) {
     handleClient(client);
   }
+  
+  // static variable to hold the incoming data from the SCK-300P/SCK-300S
+  static String dataString = "";
 
+  // check if we have data from the SCK-300P/SCK-300S
   if (MySerial1.available()) {     // If anything comes in Serial RX/TX
     char incomingByte = MySerial1.read();
     Serial.write(incomingByte);   // send it out USB Serial
     SerialBT.write(incomingByte);   // send it out SerialBT
+
+    // add to the data string until we get a \n then reset the string after storing it
+    if(incomingByte != '\n') {
+      dataString += incomingByte;
+    } else {
+      sckResponse = dataString;
+      dataString = "";
+      processSCKData();
+    }
   }
 
   // blink the led fast if we not in SCK-300S TIC or SCK-300P mode
@@ -189,6 +219,33 @@ void loop() {
   // this must be called at least every second
   if(ticSCK) {
     resetCommandTimeout();
+  }
+}
+
+// function to process the incoming data from the SCK-300P/SCK-300S
+void processSCKData() {
+  //Serial.println("SCK Command: " + sckCommand);
+  //Serial.print("SCK Data: " + sckResponse);
+  
+  // check if the data is comming from the SCK-300P
+  if(sckResponse.indexOf(":") >= 0) {
+    int idx1 = sckResponse.indexOf(",") + 1;
+    int idx2 = sckResponse.indexOf(":");
+    String value = sckResponse.substring(idx1, idx2);
+    
+    if(sckCommand.indexOf("RPM") >= 0) {
+      if(motorRunning) {
+        // set the current RPM value
+        currentRPM = value.toInt();
+      } else {
+        // set the desired RPM value
+        currentRPM = 0;
+      }
+
+    }
+
+    // reset the sck command
+    sckCommand = "";
   }
 }
 
@@ -215,6 +272,7 @@ void setModeSCK300P(bool initialize) {
   mimSCK = true;
   ticSCK = false;
   blink = false;
+  motorAcc = 0; // set the acceleration to 0 for the SCK-300P since it is not supported natively
   
   if(initialize) {
     // initialize the MiM SCK-300P
@@ -239,6 +297,7 @@ void initTIC() {
 
 // initialize the SCK-300P MiM board
 void initMIM() {
+  // send command to get the SC-300P board version
   String command = "SetStartPWM,0\r\n";
   MySerial1.print(command);
   delay(100);
@@ -447,6 +506,61 @@ void delayWhileResettingCommandTimeout(uint32_t ms) {
   } while ((uint32_t)(millis() - start) <= ms);
 }
 
+// Accelerate the motor to a target speed using a given acceleration rate in rpm/s for SCK300P.
+void accelerateToSpeed(int targetSpeed) {
+  motorAccelerating = true;
+
+  int currentSpeed = currentRPM;
+  int cps = 4; // commands sent per second to SCK-300P
+  int delayTime = round(1000/cps); // delay time in milliseconds for each rpm step change
+  
+  int step = round(motorAcc/cps);
+  step = (targetSpeed > currentSpeed) ? step : -1*step;
+  
+  Serial.print("\nAccelerating to ");
+  Serial.print(targetSpeed);
+  Serial.print(" RPM @ ");
+  Serial.print(motorAcc);
+  Serial.println(" RPM/s\n");
+
+  // get the start time in milliseconds
+  unsigned long startTime = millis();
+
+  while (currentSpeed != targetSpeed) {
+    currentSpeed += step;
+
+    // check if we have reached the target speed
+    if (currentSpeed > targetSpeed) {
+      currentSpeed = targetSpeed;
+    } 
+    
+    // send command to the SCK-300P to set the speed in RPM
+    sckCommand = "SetRPM," + String(currentSpeed) + "\r\n";
+    MySerial1.print(sckCommand);
+
+    // set the rpm value to the current speed
+    currentRPM = currentSpeed;
+
+    // print current speed every 100 rpms
+    if (currentSpeed % 100 == 0) {
+      Serial.print("Current Speed: ");
+      Serial.println(currentSpeed);
+    }
+
+    delay(delayTime);
+  }
+
+  // get the end time in milliseconds
+  unsigned long endTime = millis();
+  
+  Serial.print("\nTime to reach target speed: ");
+  Serial.print(endTime - startTime);
+  Serial.println(" ms\n");
+
+  motorAccelerating = false;
+}
+
+
 // Function to handle client connection and process HTTP requests
 void handleClient(WiFiClient &client) {
   // Wait until the client sends some data
@@ -477,23 +591,86 @@ void handleClient(WiFiClient &client) {
     sendResponse(client, "OK");
   } else if (request.indexOf("GET /setSpeed") >= 0) {
     String value = parseStringValue(request, "value=");
-    runTicCommand("SetRPM", value);
+    if(ticSCK) {
+      runTicCommand("SetRPM", value);
+    } else if(mimSCK) {
+      desiredRPM = value.toInt();
+
+      if(motorRunning) {
+        // send command to set the speed in RPM
+        sckCommand = "SetRPM," + value + "\r\n";
+        MySerial1.print(sckCommand);
+        delay(100);
+      }
+    }
+
     Serial.print("Set desired speed to ");
     Serial.println(value);
     sendResponse(client, "OK");
   } else if (request.indexOf("GET /setAcceleration") >= 0) {
     String value = parseStringValue(request, "value=");
-    runTicCommand("SetACC", value);
+    if(ticSCK) {
+      runTicCommand("SetACC", value);
+    } else if(mimSCK) {
+      motorAcc = value.toInt();
+    }
+    
     Serial.print("Set acceleration to ");
     Serial.println(value);
     sendResponse(client, "OK");
   } else if (request.indexOf("GET /start") >= 0) {
+    if(ticSCK) {
+      stepOn();
+    } else if(mimSCK) {
+      motorRunning = true;
+
+      if(motorAcc == 0) {
+        // send to turn the motor on because the speed was already set
+        sckCommand = "BLDCon\r\n";
+        MySerial1.print(sckCommand);
+        delay(100);
+
+        // send command to set the speed in RPM
+        sckCommand = "SetRPM," + String(desiredRPM) + "\r\n";
+        MySerial1.print(sckCommand);
+        delay(100);
+      } else {
+        // accelerate to the desired speed
+        sckCommand = "BLDCon\r\n";
+        MySerial1.print(sckCommand); 
+        delay(100);
+        accelerateToSpeed(desiredRPM);
+      }
+    }
+
     Serial.println("Motor started");
     sendResponse(client, "OK");
   } else if (request.indexOf("GET /stop") >= 0) {
+    if(ticSCK) {
+      stepOff();
+    } else if(mimSCK) {
+      // implement the stop for the SCK-300P
+      sckCommand = "BLDCoff\r\n";
+      MySerial1.print(sckCommand);
+      delay(100);
+    }
+
+    // reset the current rpm value and set the motor running to false
+    currentRPM = 0;
+    motorRunning = false;
+
     Serial.println("Motor stopped");
     sendResponse(client, "OK");
   } else if (request.indexOf("GET /getSpeed") >= 0) {
+    if(ticSCK) {
+      runTicCommand("GetRPM", "0");
+    } else if(mimSCK) {
+      if(!motorAccelerating) {
+        sckCommand = "GetRPM\r\n";
+        MySerial1.print(sckCommand);
+      }
+    }
+
     sendResponse(client, String(currentRPM));
   } else {
     // If unknown, serve the main page
