@@ -5,7 +5,7 @@ A brief overview of using a simple Java program to control the SCK-300S spin coa
 
 ## Introduction
 
-Unlike the SCK-300/SCK-300P models the SCK-300S requires some additional effort to control via desktop computers. Whereas the SCK-300/SCK-300P use a standard Arduino MCU with our [custom firmware]([GitHub - ns96/MiM at MiM_nano](https://github.com/ns96/MiM/tree/MiM_nano)), the SCK-300S models make use of the excellent high speed stepper drive from Pololu, the [TIC 249]([Pololu - Tic T249 USB Multi-Interface Stepper Motor Controller (Connectors Soldered)](https://www.pololu.com/product/3138)). As such, getting it to work the SCKTalk program requires the use of an additional Arduino MCU to act as both the USB to UART (TTL), or Bluetooth to UART (TTL) adapter, and a command translator.  Command translation is required to convert the [SCK Communication API](https://gist.github.com/ns96/ef95fd06573a871adfa1c4bed21eef43) calls, to [commands]([Pololu - Tic Stepper Motor Controller User’s Guide](https://www.pololu.com/docs/0J71)) used by the TIC 249.
+Unlike the SCK-300/SCK-300P models the SCK-300S requires some additional effort to control via desktop computers. Whereas the SCK-300/SCK-300P use a standard Arduino MCU with our [custom firmware](https://github.com/ns96/MiM/tree/MiM_nano), the SCK-300S models make use of the excellent high speed stepper drive from Pololu, the [TIC 249](https://www.pololu.com/product/3138). As such, getting it to work the SCKTalk program requires the use of an additional Arduino MCU to act as both the USB to UART (TTL), or Bluetooth to UART (TTL) adapter, and a command translator.  Command translation is required to convert the [SCK Communication API](https://gist.github.com/ns96/ef95fd06573a871adfa1c4bed21eef43) calls, to [commands](https://www.pololu.com/docs/0J71) used by the TIC 249.
 
 ## Hardware
 
@@ -29,7 +29,7 @@ For a wireless connection, an [AceBott ESP32 Board](https://a.co/d/4wHfQw6) was 
 
 ##### Wireless Bluetooth and Web Interface
 
-An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395) (*Must be ESP32 Pico MCU, not ESP32-S2/S3/C3 etc, since those other MCUs do not support Bluetooth classic aka SPP*).  Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using a USB-A cable. The Red/Black cables go to the +/- battery pads, Green goes to  the TX pin and White goes to the RX/pin.  Next power on the SCK-300S and pair the board to the PC (device name is **SCKCommQTPY**) over Bluetooth from a PC. Once paired, take note of the assigned comm port.
+An alternative board for making wireless Bluetooth and Web Interface connections is the, [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395) (*Must be ESP32 Pico MCU, not ESP32-S2/S3/C3 etc, since those other MCUs do not support Bluetooth classic aka SPP*).  Once the proper [Sketch](SCKCommQTPY_ESP32\SCKCommQTPY_ESP32.ino) has been loaded, connect the board to the SCK-300S unit using a USB-A cable. The Red/Black cables go to the +/- Battery Pads, Green goes to  the TX pin and White goes to the RX pin.  Next, power on the SCK-300S and pair the board to the PC (device name is **SCKCommQTPY**) over Bluetooth from a PC. Once paired, take note of the assigned comm port.
 
 ![QTPY + USB-A](QTPY_01.png)
 
@@ -55,4 +55,4 @@ Checkout the [YouTube Video]([SCK 300S Spin Coater PC Connectivity - YouTube](ht
 
 ## Java Serial Library
 
-What makes this code possible is the excellent RX/TX library for reading/writing to Serial port: https://github.com/NeuronRobotics/nrjavaserial
+What makes this code possible is the excellent RX/TX library for reading/writing to the Serial port: https://github.com/NeuronRobotics/nrjavaserial
