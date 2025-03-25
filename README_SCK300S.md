@@ -51,7 +51,9 @@ Inorder to run the SCKTalk application (Windows/Linux), first install the [Java 
 6. Once connected type in the desired speed, then press the "Start/Stop" button to start motor.
 7. Press the "Start/Stop" button again to stop the motor.
 
-Checkout the [YouTube Video]([SCK 300S Spin Coater PC Connectivity - YouTube](https://youtu.be/YuBDu55Y0zg))
+
+
+Checkout the [YouTube Video](https://youtu.be/YuBDu55Y0zg)
 
 ## Java Serial Library
 
