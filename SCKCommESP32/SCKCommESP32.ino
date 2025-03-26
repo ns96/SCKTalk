@@ -4,9 +4,11 @@
  * on an arduino board, in this case the ACEBOTT ESP32 Max V1.0
  * https://www.acebott.com/products/acebott-qa008-esp32-max-v1-0-with-1m-type-c-cable
  * https://forum.arduino.cc/t/bluetooth-classic-and-ble-in-esp32-wroom/891594/10
- * https://quadmeup.com/arduino-esp32-and-3-hardware-serial-ports/
+ * https://acebottteam.github.io/acebott-docs-master/board/ESP32/QA007%20ESP32%20Max%20V1.0%20Controller%20Board.html
  * 
- * Select Board ESP32-WROOM-DA Module
+ * Please note that the RX/TX pins on this board is shared with the USB Serial port
+ * 
+ * Select Board ESP32-WROOM-DA Module or ESP32 Dev Module
  */
 #include <Tic.h>
 #include "BluetoothSerial.h"
@@ -24,7 +26,6 @@ String device_name = "SCKCommESP32";
 #endif
 
 BluetoothSerial SerialBT;
-
 
 #define LED_BUILTIN 2
 
@@ -141,18 +142,18 @@ void runCommand(String cmd, String value) {
     setMicroStep(microStep);
   } else if(cmd.equals("SetSPR")) { // set the steps per revolution
     stepsPerRev = value.toInt();
-  } else if(cmd.equals("SetMaxRPM")) { // set the steps per revolution
+  } else if(cmd.equals("SetMaxRPM")) { // set the max RPM
     maxRPM = value.toInt();
     clksMax = (uint32_t)(maxRPM * stepsPerRev * microStep / 60.0);
-  } else if(cmd.equals("SetRPM")) { // set the steps per revolution
+  } else if(cmd.equals("SetRPM")) { // set the desired RPM
     int rpm = value.toInt();
     uint32_t clks = StepperRpmToClks(rpm);
     stepSetFreqRamp(clks);
-  } else if(cmd.equals("GetRPM")) { // set the steps per revolution
+  } else if(cmd.equals("GetRPM")) { // get the current RPM
     int round = value.toInt();
     int rpm = StepperClksToRpm(round);
     SerialBT.println(rpm);
-  } else if(cmd.equals("SetACC")) { // set the steps per revolution
+  } else if(cmd.equals("SetACC")) { // set the acceleration in RPM per sec
     int rpm = value.toInt();
     setAcceleration(rpm);
   } else if(cmd.equals("SetDIR")) { // set the direction
@@ -162,9 +163,9 @@ void runCommand(String cmd, String value) {
     } else {
       moveUp = false; // counter-clockwise
     }
-  } else if(cmd.equals("STEPoff")) { // set the steps per revolution
+  } else if(cmd.equals("STEPoff")) { // turn off the stepper motor
     stepOff(); 
-  } else if(cmd.equals("STEPon")) { // set the steps per revolution
+  } else if(cmd.equals("STEPon")) { // turn on the stepper motor
     stepOn(); 
   }  
 }
